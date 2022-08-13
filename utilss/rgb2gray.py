@@ -5,10 +5,13 @@ import numpy as np
 from skimage.filters import threshold_local
 import imutils
 from tqdm import tqdm
+import sys
 
+# sys.path.extend(['/Users/NghiaKhang/Coding/Projects/License Plate Detection/LPR'])
+# print(os.getcwd())
 
-root = '../character_RGB/'
-gray_folder = '../character_GRAY'
+root = '../character_4k/'
+gray_folder = '../character_4k_binary/'
 """
     Convert RGB image to Binary image
 """
@@ -57,15 +60,36 @@ def denoise(char):
         cv2.fillPoly(char, pts=[points], color=(0, 0, 0))
     return char
 
-for folder in tqdm(os.listdir(root)):
-    if folder == '.DS_Store':
-        continue
-    path_image = [name for name in os.listdir(os.path.join(root, folder)) if name.endswith('jpg')]
-    os.makedirs(os.path.join(gray_folder, folder), exist_ok=True)
 
-    for path in path_image:
-        img = cv2.imread(os.path.join(root, folder, path))
+# HAVE SUB FOLDER
+def have_sub_folder():
+    for folder in tqdm(os.listdir(root)):
+        if folder == '.DS_Store':
+            continue
+        path_image = [name for name in os.listdir(os.path.join(root, folder)) if name.endswith('jpg')]
+        os.makedirs(os.path.join(gray_folder, folder), exist_ok=True)
+
+        for path in path_image:
+            img = cv2.imread(os.path.join(root, folder, path))
+            img = thresold(img)
+            img = padding(img)
+            img = denoise(img)
+            cv2.imwrite(os.path.join(gray_folder, folder, path), img)
+
+# have_sub_folder()
+
+# NON-SUB FOLDER
+def non_sub_folder():
+    os.makedirs(gray_folder, exist_ok=True)
+    for path_image in tqdm(os.listdir(root)):
+        if path_image == '.DS_Store':
+            continue
+        img = cv2.imread(os.path.join(root, path_image))
         img = thresold(img)
         img = padding(img)
         img = denoise(img)
-        cv2.imwrite(os.path.join(gray_folder, folder, path), img)
+        cv2.imwrite(os.path.join(gray_folder, path_image), img)
+
+non_sub_folder()
+
+print('Done!')

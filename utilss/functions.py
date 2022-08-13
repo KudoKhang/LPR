@@ -55,7 +55,9 @@ def convert2Square(image):
 
     return squared_image
 
-def format(candidates):
+def format(candidates, h_avg):
+    #TODO: Tại vị trí thứ 3 luôn luôn là chữ,
+    # còn các vị trí khác luôn luôn là số
     first_line = []
     second_line = []
 
@@ -70,7 +72,7 @@ def format(candidates):
     y_max = max(np.array(lst)[:, 0])
 
     for candidate, coordinate in candidates:
-        if coordinate[0] + 30 > y_max:
+        if coordinate[0] + 0.75 * h_avg > y_max:
             first_line.append((candidate, coordinate[1]))
         else:
             second_line.append((candidate, coordinate[1]))
@@ -83,8 +85,10 @@ def format(candidates):
 
     if len(second_line) == 0:  # if license plate has 1 line
         license_plate = "".join([str(ele[0]) for ele in first_line])
+        license_plate = license_plate[:3] + '-' + license_plate[3:]
     else:  # if license plate has 2 lines
         license_plate = "".join([str(ele[0]) for ele in second_line]) + "-" +  "".join([str(ele[0]) for ele in first_line])
+        # license_plate = "".join([str(ele[0]) for ele in first_line]) + "-" +  "".join([str(ele[0]) for ele in second_line])
 
     return license_plate
 

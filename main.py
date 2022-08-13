@@ -24,15 +24,20 @@ recogChar = CNN_Model(trainable=False).model
 recogChar.load_weights(CHAR_CLASSIFICATION_WEIGHTS)
 
 def detect_char(lpRegion):
+    # TODO: Take 8 characters bbox with the most confidence
     condidates = []
     results = model_detect_character(lpRegion)
     t = results.pandas().xyxy[0]
     bbox = list(np.int32(np.array(t)[:, :4]))
-    bbox.sort(key=lambda x: x[0])
+
+    # bbox.sort(key=lambda x: x[0])
+
+    height_char = []
 
     if len(bbox) > 0:
         for bb in bbox:
             x1, y1, x2, y2 = bb
+            height_char.append(y2 - y1)
             cv2.rectangle(lpRegion, (x1,y1), (x2,y2), (0,255,0), 1)
             char = lpRegion.copy()[y1:y2, x1:x2]
             V = cv2.split(cv2.cvtColor(char, cv2.COLOR_BGR2HSV))[2]
@@ -51,7 +56,7 @@ def detect_char(lpRegion):
             bg = denoise(bg)
             condidates.append((bg, (y1, x1)))
 
-    return condidates
+    return condidates, sum(height_char) / len(height_char)
 
 
 def recognizeChar(candidates):
@@ -101,27 +106,41 @@ def detect_plate(img):
     t = results.pandas().xyxy[0]
     bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])])
     plate = crop(img, bbox)
-    return plate
+    return plate, bbox
 
-path_pravite_test = '../pravite_test_500/'
-os.makedirs('results_clean/', exist_ok=True)
-image_path = [name for name in os.listdir(path_pravite_test) if name.endswith(('jpg', 'png'))]
+def E2E(image):
+    plate, bbox = detect_plate(image)
+    candidates, h_avg = detect_char(plate)
+    candidates = recognizeChar(candidates)
+    license_plate = format(candidates, h_avg)
+    print(license_plate)
+    img = draw_labels_and_boxes(image, license_plate, bbox)
+    return img
 
-for path in tqdm(image_path):
-    try:
-        img = cv2.imread(path_pravite_test + path)
-        plate = detect_plate(img)
-        candidates = detect_char(plate)
-        candidates = recognizeChar(candidates)
-        license_plate = format(candidates)
-        img = draw_labels_and_boxes(img, license_plate, bbox)
-        print(license_plate)
-        cv2.imwrite('results_clean/' + path, img)
-    except:
-        with open('tests/error.txt', 'a') as f:
-            f.write(f"{path} \n")
-            f.close()
-        print(path)
+def process_folder(path_folder='data/pravite_test_500', output_folder='output/results_clean/'):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
 
-# cv2.imshow('result', img)
-# cv2.waitKey(0)
+    image_path = [name for name in os.listdir(path_folder) if name.endswith(('jpg', 'png'))]
+    os.remove('tests/error.txt')
+    for path in tqdm(image_path):
+        try:
+            img = cv2.imread(os.path.join(path_folder, path))
+            img = E2E(img)
+            cv2.imwrite(os.path.join(output_folder, path), img)
+        except:
+            with open('tests/error.txt', 'a') as f:
+                f.write(f"{path} \n")
+                f.close()
+            print(path)
+
+def process_image(image_path):
+    img = cv2.imread(image_path)
+    img = E2E(img)
+    cv2.imshow('result', img)
+    cv2.waitKey(0)
+
+
+if __name__ == '__main__':
+    process_folder('data/pravite_test_500/', 'output/results_500')
+    # process_image('data/pravite_test_500/49.jpg')

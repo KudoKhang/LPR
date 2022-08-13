@@ -144,3 +144,6 @@ cython_debug/
 results_clean
 tests
 src/weights
+data/
+output/
+visualize.jpg
