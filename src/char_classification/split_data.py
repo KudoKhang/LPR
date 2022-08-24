@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 # Split data to Ditgits and Alphas folder
 
-path_root = '../character_GRAY_clean/'
+path_root = '../character_dataset2/'
 
 os.makedirs('src/char_classification/digits', exist_ok=True)
 os.makedirs('src/char_classification/alphas', exist_ok=True)

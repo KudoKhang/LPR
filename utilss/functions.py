@@ -55,6 +55,26 @@ def convert2Square(image):
 
     return squared_image
 
+def try_catch(line1, line2):
+    index = len(line1)
+    line = line1 + line2
+
+    for i in range(len(line)):
+        if i == 2:
+            continue
+
+        if line[i][0] == 'D':
+            temp = list(line[i])
+            temp[0] = '0'
+            line[i] = tuple(temp)
+
+        if line[i][0] == 'B':
+            temp = list(line[i])
+            temp[0] = '8'
+            line[i] = tuple(temp)
+
+    return line[:index], line[index:]
+
 def format(candidates, h_avg):
     #TODO: Tại vị trí thứ 3 luôn luôn là chữ,
     # còn các vị trí khác luôn luôn là số
@@ -82,6 +102,8 @@ def format(candidates, h_avg):
 
     first_line = sorted(first_line, key=take_second)
     second_line = sorted(second_line, key=take_second)
+
+    first_line, second_line = try_catch(first_line, second_line)
 
     if len(second_line) == 0:  # if license plate has 1 line
         license_plate = "".join([str(ele[0]) for ele in first_line])
