@@ -144,6 +144,7 @@ cython_debug/
 results_clean
 tests
 src/weights
+src/char_classification
 data/
 output/
 visualize.jpg
