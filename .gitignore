@@ -148,3 +148,4 @@ src/char_classification
 data/
 output/
 visualize.jpg
+debug/
