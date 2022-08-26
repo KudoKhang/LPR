@@ -1,16 +1,6 @@
-import os
-from tqdm import tqdm
-import cv2
-from pathlib import Path
-import argparse
-import time
-import torch
-import numpy as np
-from skimage.filters import threshold_local
-import imutils
-from skimage import measure
-import warnings
-warnings.filterwarnings('ignore')
+import os.path
+
+from .libs import *
 
 def get_max_area(bbox):
     if len(bbox) == 1:
@@ -61,12 +51,22 @@ def try_catch(line1, line2):
 
     for i in range(len(line)):
         if i == 2:
+        #     if line[i][0] == '0':
+        #         temp = list(line[i])
+        #         temp[0] = 'C'
+        #         line[i] = tuple(temp)
+
             continue
 
         if line[i][0] == 'D':
             temp = list(line[i])
             temp[0] = '0'
             line[i] = tuple(temp)
+
+        # if line[i][0] == 'C':
+        #     temp = list(line[i])
+        #     temp[0] = '0'
+        #     line[i] = tuple(temp)
 
         if line[i][0] == 'B':
             temp = list(line[i])
@@ -75,18 +75,24 @@ def try_catch(line1, line2):
 
     return line[:index], line[index:]
 
+def padding(thresh, h=400):
+    char_origin = denoise(thresh)
+    thresh = imutils.resize(thresh, height=h)
+    thresh = cv2.medianBlur(thresh, 5)
+
+    char_bg = np.zeros((h, h))
+    x = int((h - thresh.shape[1]) / 2)
+    char_bg[0:h, x: x + thresh.shape[1]] = thresh
+    char_bg = denoise(char_bg)
+    char_bg = cv2.resize(char_bg, (28, 28))
+    return char_bg, char_origin
+
 def format(candidates, h_avg):
-    #TODO: Tại vị trí thứ 3 luôn luôn là chữ,
-    # còn các vị trí khác luôn luôn là số
     first_line = []
     second_line = []
 
-    """ IDEA
-        - Find y_max, for y .. compare y_max
-    """
-
     lst = []
-    l = np.array(candidates)[:, 1]
+    l = np.array(candidates, dtype=object)[:, 1]
     for l_sub in l:
         lst.append(list(l_sub))
     y_max = max(np.array(lst)[:, 0])
@@ -110,10 +116,36 @@ def format(candidates, h_avg):
         license_plate = license_plate[:3] + '-' + license_plate[3:]
     else:  # if license plate has 2 lines
         license_plate = "".join([str(ele[0]) for ele in second_line]) + "-" +  "".join([str(ele[0]) for ele in first_line])
-        # license_plate = "".join([str(ele[0]) for ele in first_line]) + "-" +  "".join([str(ele[0]) for ele in second_line])
 
     return license_plate
 
+def denoise(char):
+    char = np.uint8(char)
+    _, mask = cv2.threshold(char, 15, 255, cv2.THRESH_BINARY)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    l = []
+    for c in contours:
+        area =cv2.contourArea(c)
+        x, y, w, h = cv2.boundingRect(c)
+        l.append((x, y , w, h, area))
+
+    if len(l) > 0:
+        l.pop(np.argmax(np.array(l)[:, -1]))
+
+    for bb in l:
+        x, y, w, h = bb[:4]
+        points = np.array([(x, y), (x + w, y), (x + w, y + h), (x, y + h)])
+        cv2.fillPoly(char, pts=[points], color=(0, 0, 0))
+
+    return char
+
+def get_num_error(path_err):
+    if not os.path.exists(path_err):
+        return 0
+    with open(path_err, 'r') as f:
+        num_lines = sum(1 for line in f)
+        return num_lines
 
 def segmentation(LpRegion):
     candidates = []
@@ -196,3 +228,9 @@ def detect_char_rgb(lpRegion):
 
             condidates.append((bg, (y1, x1)))
     return condidates
+
+def remove_space(root):
+    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
+    for path in tqdm(path_image):
+        new_name = ''.join(path.split())
+        os.rename(os.path.join(root + path), os.path.join(root + new_name))

@@ -1,8 +1,6 @@
 import os.path
 
 from utilss import *
-from utilss.functions import *
-
 
 ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'K', 9: 'L', 10: 'M', 11: 'N', 12: 'P',
               13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2', 24: '3',
@@ -10,7 +8,7 @@ ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8:
 
 # Init models
 model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt', force_reload=True)  # detect licence plate
-model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_087.pt') # detect character
+model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_new.pt') # detect character
 # CHAR_CLASSIFICATION_WEIGHTS = './src/weights/weight_character_gray_clean.h5' # Classify character dataset1
 CHAR_CLASSIFICATION_WEIGHTS = './src/weights/weight_character_dataset2.h5' # Classify character : 2 dataset
 recogChar = CNN_Model(trainable=False).model
@@ -29,10 +27,15 @@ def detect_char(lpRegion, show_binary=False):
     height_char = []
 
     if len(bbox) > 0:
-        for bb in bbox:
+        for i, bb in enumerate(bbox):
             x1, y1, x2, y2 = bb
             height_char.append(y2 - y1)
             char = lpRegion.copy()[y1:y2, x1:x2]
+
+            # save char to debug folder
+            os.makedirs('debug/', exist_ok=True)
+            cv2.imwrite(f'debug/{i}.png', cv2.resize(char, tuple([a * 1 for a in char.shape[:2][::-1]])))
+
             V = cv2.split(cv2.cvtColor(char, cv2.COLOR_BGR2HSV))[2]
             T = threshold_local(V, 31, offset=10, method="gaussian")
             thresh = (V > T).astype("uint8") * 255
@@ -40,7 +43,7 @@ def detect_char(lpRegion, show_binary=False):
             character, character_no_resize = padding(thresh)
             condidates.append((character, (y1, x1)))
             condidates_for_visualize.append((character_no_resize, (y1, x1)))
-            cv2.rectangle(lpRegion, (x1, y1), (x2, y2), (0, 255, 0), 1)
+            cv2.rectangle(lpRegion, (x1,y1), (x2,y2), (0,255,0), 1) # Nguy hiem qua
 
         if show_binary:
             bg = np.zeros(lpRegion.shape[:2])
@@ -102,8 +105,7 @@ def eval(root='../private_test/BAD/'):
     total_image = len(path_image)
 
     err_log = 'tests/error_val.txt'
-    BoG = root.split('/')[-2]
-    log = f'tests/log_{BoG}.txt'
+    log = 'tests/log.txt'
     if os.path.exists(err_log):
         os.remove(err_log)
     if os.path.exists(log):
@@ -164,12 +166,6 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/private_test/GOOD/76C06496.jpg')
+    process_image('data/private_test/GOOD/75C05388.jpg')
+    # process_image('data/private_test/76C06340')
     # eval('./data/private_test/GOOD/')
-
-"""
-    IDEA:
-        - Thêm hàm transform cho license plate
-        - Vì ảnh upsize lên việc threshold sẽ dễ hơn --> Traning lại mạng với kích thước ảnh đầu vào lớn hơn
-        - Dùng data binary hôm trước rồi x10 lên --> Đổ vào train lại
-"""
