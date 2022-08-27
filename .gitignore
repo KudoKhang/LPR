@@ -141,10 +141,8 @@ cython_debug/
 .idea
 *.DS_Store
 
-results_clean
 tests
-src/weights
-src/char_classification
+src/
 data/
 output/
 visualize.jpg

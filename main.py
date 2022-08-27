@@ -1,23 +1,26 @@
-import os.path
-
+# import os.path
 from utilss import *
-from utilss.functions import *
-
-
-ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'K', 9: 'L', 10: 'M', 11: 'N', 12: 'P',
-              13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2', 24: '3',
-              25: '4', 26: '5', 27: '6', 28: '7', 29: '8', 30: '9', 31: "Background"}
+# from utilss.functions import *
 
 # Init models
-model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt', force_reload=True)  # detect licence plate
-model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_087.pt') # detect character
-# CHAR_CLASSIFICATION_WEIGHTS = './src/weights/weight_character_gray_clean.h5' # Classify character dataset1
-CHAR_CLASSIFICATION_WEIGHTS = './src/weights/weight_character_dataset2.h5' # Classify character : 2 dataset
-recogChar = CNN_Model(trainable=False).model
-recogChar.load_weights(CHAR_CLASSIFICATION_WEIGHTS)
+model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt', force_reload=True)
+model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_087.pt')
+model_recognize_character = CNN_Model(trainable=False).model
+model_recognize_character.load_weights('./src/weights/classify_character.h5')
+
+
+def detect_plate(img):
+    results = model_detect(img)
+    t = results.pandas().xyxy[0]
+    if len(t) > 0:
+        # TODO: check area and confident
+        bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])])
+        plate = crop(img, bbox)
+        return plate, bbox
+    else:
+        return None, None
 
 def detect_char(lpRegion, show_binary=False):
-    # check BINARY funcs
     condidates = []
     condidates_for_visualize = []
     results = model_detect_character(lpRegion)
@@ -25,7 +28,6 @@ def detect_char(lpRegion, show_binary=False):
 
     # Check threshold!!! Get 8 character co confident lon nhat | Sort theo confident
     bbox = np.int32(np.array(t)[:,:4][np.where(np.array(t)[:,4] > 0.7)]).tolist()
-    # bbox.sort(key=lambda x: x[0])
     height_char = []
 
     if len(bbox) > 0:
@@ -52,21 +54,11 @@ def detect_char(lpRegion, show_binary=False):
             cv2.imshow('Binary', cv2.resize(bg, tuple([a * 3 for a in bg.shape[::-1]])))
 
         return condidates, sum(height_char) / len(height_char)
-    # Case: BBox empty
+
+    # TODO: Case BBox empty
     return 0, 0
 
-def detect_plate(img):
-    results = model_detect(img)
-    t = results.pandas().xyxy[0]
-    if len(t) > 0:
-        # TODO: Xet ca dien tich va confident
-        bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])])
-        plate = crop(img, bbox)
-        return plate, bbox
-    else:
-        return None, None
-
-def recognizeChar(candidates):
+def recognize_char(candidates):
     characters = []
     coordinates = []
 
@@ -75,12 +67,14 @@ def recognizeChar(candidates):
         coordinates.append(coordinate)
 
     characters = np.array(characters)
-    result = recogChar.predict_on_batch(characters)
+    result = model_recognize_character.predict_on_batch(characters)
     result_idx = np.argmax(result, axis=1)
 
     candidates = []
     for i in range(len(result_idx)):
         if result_idx[i] == 31:  # if is background or noise, ignore it
+            # If idx == 31, expand area bbox --> 110 % -- 78C00149(2).jpg
+            char_err = characters[i]
             continue
         candidates.append((ALPHA_DICT[result_idx[i]], coordinates[i]))
 
@@ -88,22 +82,28 @@ def recognizeChar(candidates):
 
 def E2E(image):
     plate, bbox = detect_plate(image)
+
+    # plate = transform_plate(plate)
+
     if plate is None:
         return image, 'No License Plate Detected!'
-    candidates_binary, h_avg = detect_char(plate, True)
-    candidates_predict = recognizeChar(candidates_binary)
+
+    candidates_binary, h_avg = detect_char(plate, show_binary=True)
+    candidates_predict = recognize_char(candidates_binary)
     license_plate = format(candidates_predict, h_avg)
     img = draw_labels_and_boxes(image, license_plate, bbox)
     return img, license_plate
 
 def eval(root='../private_test/BAD/'):
+    remove_space(root) # 76C12345 (2).jpg --> 76C12345.jpg
     path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
-    true = 0
-    total_image = len(path_image)
+    true, total_image= 0, len(path_image)
 
+    os.makedirs('tests/', exist_ok=True)
     err_log = 'tests/error_val.txt'
     BoG = root.split('/')[-2]
     log = f'tests/log_{BoG}.txt'
+
     if os.path.exists(err_log):
         os.remove(err_log)
     if os.path.exists(log):
@@ -164,12 +164,5 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/private_test/GOOD/76C06496.jpg')
+    process_image('data/private_test/GOOD/78H00063.jpg')
     # eval('./data/private_test/GOOD/')
-
-"""
-    IDEA:
-        - Thêm hàm transform cho license plate
-        - Vì ảnh upsize lên việc threshold sẽ dễ hơn --> Traning lại mạng với kích thước ảnh đầu vào lớn hơn
-        - Dùng data binary hôm trước rồi x10 lên --> Đổ vào train lại
-"""

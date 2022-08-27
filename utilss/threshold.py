@@ -3,7 +3,7 @@ import numpy as np
 from utilss import *
 
 
-char_ori = cv2.imread('debug/2.png')
+char_ori = cv2.imread('../debug/2.png')
 char = cv2.resize(char_ori, tuple([a * 1 for a in char_ori.shape[:2][::-1]]))
 V = cv2.split(cv2.cvtColor(char, cv2.COLOR_BGR2HSV))[2]
 T = threshold_local(V, 31, offset=10, method="gaussian")

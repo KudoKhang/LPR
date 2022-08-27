@@ -2,80 +2,66 @@ import os.path
 
 from .libs import *
 
-def get_max_area(bbox):
-    if len(bbox) == 1:
-        return bbox[0]
-    if len(bbox) == 0:
-        return "No plate detection!"
-    else:
-        area = [(bbox[:,2] - bbox[:,0]) * (bbox[:,3] - bbox[:,1])]
-        index_max = int(np.where(max(area))[0])
-        return bbox[index_max]
+
+ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'K', 9: 'L', 10: 'M', 11: 'N', 12: 'P',
+              13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2', 24: '3',
+              25: '4', 26: '5', 27: '6', 28: '7', 29: '8', 30: '9', 31: "Background"}
 
 def crop(image, bbox):
     return image[bbox[1]:bbox[3], bbox[0]:bbox[2]]
 
-def convert2Square(image):
-    img_h = image.shape[0]
-    img_w = image.shape[1]
+def get_num_error(path_err):
+    # Return num of error images in logs of eval function
+    if not os.path.exists(path_err):
+        return 0
+    with open(path_err, 'r') as f:
+        num_lines = sum(1 for line in f)
+        return num_lines
 
-    # if height > width
-    if img_h > img_w:
-        diff = img_h - img_w
-        if diff % 2 == 0:
-            x1 = np.zeros(shape=(img_h, diff//2))
-            x2 = x1
-        else:
-            x1 = np.zeros(shape=(img_h, diff//2))
-            x2 = np.zeros(shape=(img_h, (diff//2) + 1))
+def draw_labels_and_boxes(image, labels, boxes):
+    x_min = round(boxes[0])
+    y_min = round(boxes[1])
+    x_max = round(boxes[2])
+    y_max = round(boxes[3])
 
-        squared_image = np.concatenate((x1, image, x2), axis=1)
-    elif img_w > img_h:
-        diff = img_w - img_h
-        if diff % 2 == 0:
-            x1 = np.zeros(shape=(diff//2, img_w))
-            x2 = x1
-        else:
-            x1 = np.zeros(shape=(diff//2, img_w))
-            x2 = x1
+    image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2)
+    image = cv2.putText(image, labels, (x_min - 40, y_min), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 255), thickness=2)
 
-        squared_image = np.concatenate((x1, image, x2), axis=0)
-    else:
-        squared_image = image
+    return image
 
-    return squared_image
+def remove_space(root):
+    # 76C12345 (2).jpg --> 76C12345(2).jpg
+    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
+    for path in tqdm(path_image):
+        new_name = ''.join(path.split())
+        os.rename(os.path.join(root + path), os.path.join(root + new_name))
+
+#------------------------------------------------------------------------------------------------------------
 
 def try_catch(line1, line2):
     index = len(line1)
     line = line1 + line2
 
+    dict_try_catch_line1 = {'0': 'C'}
+    dict_try_catch_line2 = {'D': '0',
+                            'C': '0',
+                            'B': '8'}
+
     for i in range(len(line)):
         if i == 2:
-        #     if line[i][0] == '0':
-        #         temp = list(line[i])
-        #         temp[0] = 'C'
-        #         line[i] = tuple(temp)
-
+            # Some case classify character to noise --> id == 2 not right
             continue
 
-        if line[i][0] == 'D':
-            temp = list(line[i])
-            temp[0] = '0'
-            line[i] = tuple(temp)
-
-        # if line[i][0] == 'C':
-        #     temp = list(line[i])
-        #     temp[0] = '0'
-        #     line[i] = tuple(temp)
-
-        if line[i][0] == 'B':
-            temp = list(line[i])
-            temp[0] = '8'
-            line[i] = tuple(temp)
+        for key in dict_try_catch_line2.keys():
+            if line[i][0] == key:
+                temp = list(line[i])
+                temp[0] = dict_try_catch_line2[key]
+                line[i] = tuple(temp)
 
     return line[:index], line[index:]
 
 def padding(thresh, h=400):
+    # Denoise -> padding to sqare -> resize to (28x28) -> forward to model classify
     char_origin = denoise(thresh)
     thresh = imutils.resize(thresh, height=h)
     thresh = cv2.medianBlur(thresh, 5)
@@ -91,12 +77,13 @@ def format(candidates, h_avg):
     first_line = []
     second_line = []
 
-    lst = []
-    l = np.array(candidates, dtype=object)[:, 1]
-    for l_sub in l:
-        lst.append(list(l_sub))
-    y_max = max(np.array(lst)[:, 0])
+    # Get y_max in all characters
+    lst_temp = []
+    for l_sub in np.array(candidates, dtype=object)[:, 1]:
+        lst_temp.append(list(l_sub))
+    y_max = max(np.array(lst_temp)[:, 0])
 
+    # Determined character to line1 or line2 by compare y_max with h_avg (height average character)
     for candidate, coordinate in candidates:
         if coordinate[0] + 0.75 * h_avg > y_max:
             first_line.append((candidate, coordinate[1]))
@@ -109,128 +96,63 @@ def format(candidates, h_avg):
     first_line = sorted(first_line, key=take_second)
     second_line = sorted(second_line, key=take_second)
 
+    # Catch some case confuse
     first_line, second_line = try_catch(first_line, second_line)
 
-    if len(second_line) == 0:  # if license plate has 1 line
+    if len(second_line) == 0:
         license_plate = "".join([str(ele[0]) for ele in first_line])
         license_plate = license_plate[:3] + '-' + license_plate[3:]
-    else:  # if license plate has 2 lines
+    else:
         license_plate = "".join([str(ele[0]) for ele in second_line]) + "-" +  "".join([str(ele[0]) for ele in first_line])
 
     return license_plate
 
 def denoise(char):
+    # Remove noise in character binary via findContour --> calculate Area --> Compare with threshold area
     char = np.uint8(char)
     _, mask = cv2.threshold(char, 15, 255, cv2.THRESH_BINARY)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    l = []
+    lst_coord_and_area = []
     for c in contours:
         area =cv2.contourArea(c)
         x, y, w, h = cv2.boundingRect(c)
-        l.append((x, y , w, h, area))
+        lst_coord_and_area.append((x, y , w, h, area))
 
-    if len(l) > 0:
-        l.pop(np.argmax(np.array(l)[:, -1]))
+    if len(lst_coord_and_area) > 0:
+        lst_coord_and_area.pop(np.argmax(np.array(lst_coord_and_area)[:, -1]))
 
-    for bb in l:
+    for bb in lst_coord_and_area:
         x, y, w, h = bb[:4]
         points = np.array([(x, y), (x + w, y), (x + w, y + h), (x, y + h)])
         cv2.fillPoly(char, pts=[points], color=(0, 0, 0))
 
     return char
 
-def get_num_error(path_err):
-    if not os.path.exists(path_err):
-        return 0
-    with open(path_err, 'r') as f:
-        num_lines = sum(1 for line in f)
-        return num_lines
+def transform_plate(img):
+    w, h = img.shape[:2]
 
-def segmentation(LpRegion):
-    candidates = []
-    # apply thresh to extracted licences plate
-    V = cv2.split(cv2.cvtColor(LpRegion, cv2.COLOR_BGR2HSV))[2]
+    pt_A = [6, 2]
+    pt_B = [3, 47]
+    pt_C = [56, 56]
+    pt_D = [62, 12]
 
-    # adaptive threshold
-    T = threshold_local(V, 15, offset=10, method="gaussian")
-    thresh = (V > T).astype("uint8") * 255
+    width_AD = np.sqrt(((pt_A[0] - pt_D[0]) ** 2) + ((pt_A[1] - pt_D[1]) ** 2))
+    width_BC = np.sqrt(((pt_B[0] - pt_C[0]) ** 2) + ((pt_B[1] - pt_C[1]) ** 2))
+    maxWidth = max(int(width_AD), int(width_BC))
 
-    # convert black pixel of digits to white pixel
-    thresh = cv2.bitwise_not(thresh)
-    thresh = imutils.resize(thresh, width=400)
-    thresh = cv2.medianBlur(thresh, 5)
+    height_AB = np.sqrt(((pt_A[0] - pt_B[0]) ** 2) + ((pt_A[1] - pt_B[1]) ** 2))
+    height_CD = np.sqrt(((pt_C[0] - pt_D[0]) ** 2) + ((pt_C[1] - pt_D[1]) ** 2))
+    maxHeight = max(int(height_AB), int(height_CD))
 
-    # connected components analysis
-    labels = measure.label(thresh, connectivity=2, background=0)
+    input_pts = np.float32([pt_A, pt_B, pt_C, pt_D])
+    output_pts = np.float32([[0, 0],
+                             [0, maxHeight - 1],
+                             [maxWidth - 1, maxHeight - 1],
+                             [maxWidth - 1, 0]])
 
-    # loop over the unique components
-    for label in np.unique(labels):
-        # if this is background label, ignore it
-        if label == 0:
-            continue
+    M = cv2.getPerspectiveTransform(input_pts, output_pts)
+    img = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
+    return img
 
-        # init mask to store the location of the character candidates
-        mask = np.zeros(thresh.shape, dtype="uint8")
-        mask[labels == label] = 255
-
-        # find contours from mask
-        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        if len(contours) > 0:
-            contour = max(contours, key=cv2.contourArea)
-            (x, y, w, h) = cv2.boundingRect(contour)
-
-            # rule to determine characters
-            aspectRatio = w / float(h)
-            solidity = cv2.contourArea(contour) / float(w * h)
-            heightRatio = h / float(LpRegion.shape[0])
-
-            if 0.1 < aspectRatio < 1.0 and solidity > 0.1 and 0.35 < heightRatio < 2.0:
-                # extract characters
-                candidate = np.array(mask[y:y + h, x:x + w])
-                square_candidate = convert2Square(candidate)
-                square_candidate = cv2.resize(square_candidate, (28, 28), cv2.INTER_AREA)
-                square_candidate = square_candidate.reshape((28, 28, 1))
-                candidates.append((square_candidate, (y, x)))
-    return candidates
-
-def draw_labels_and_boxes(image, labels, boxes):
-    x_min = round(boxes[0])
-    y_min = round(boxes[1])
-    x_max = round(boxes[2])
-    y_max = round(boxes[3])
-
-    image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2)
-    image = cv2.putText(image, labels, (x_min - 40, y_min), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 255), thickness=2)
-
-    return image
-
-def detect_char_rgb(lpRegion):
-    condidates = []
-    results = model_detect_character(lpRegion)
-    t = results.pandas().xyxy[0]
-    bbox = list(np.int32(np.array(t)[:, :4]))
-    bbox.sort(key=lambda x: x[0])
-
-    if len(bbox) > 0:
-        for bb in bbox:
-            x1, y1, x2, y2 = bb
-            cv2.rectangle(lpRegion, (x1,y1), (x2,y2), (0,255,0), 1)
-            char = lpRegion.copy()[y1:y2, x1:x2]
-
-            bg = np.zeros((char.shape[0], char.shape[0]))
-            x = int((char.shape[0] - char.shape[1]) / 2)
-
-            char = cv2.cvtColor(char, cv2.COLOR_BGR2GRAY)
-            bg[0:char.shape[0], x: x + char.shape[1]] = char
-            bg = cv2.resize(bg, (28, 28))
-
-            condidates.append((bg, (y1, x1)))
-    return condidates
-
-def remove_space(root):
-    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
-    for path in tqdm(path_image):
-        new_name = ''.join(path.split())
-        os.rename(os.path.join(root + path), os.path.join(root + new_name))
+# ------------------------------------------------------------------------------------------------------------
