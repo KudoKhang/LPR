@@ -1,10 +1,9 @@
 import cv2
 import numpy as np
-from utilss import *
-
+from skimage.filters import threshold_local
 
 char_ori = cv2.imread('../debug/2.png')
-char = cv2.resize(char_ori, tuple([a * 1 for a in char_ori.shape[:2][::-1]]))
+char = cv2.resize(char_ori, tuple([a * 10 for a in char_ori.shape[:2][::-1]]))
 V = cv2.split(cv2.cvtColor(char, cv2.COLOR_BGR2HSV))[2]
 T = threshold_local(V, 31, offset=10, method="gaussian")
 thresh = (V > T).astype("uint8") * 255

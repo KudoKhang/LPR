@@ -1,6 +1,4 @@
-# import os.path
 from utilss import *
-# from utilss.functions import *
 
 # Init models
 model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt', force_reload=True)
