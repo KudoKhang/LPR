@@ -31,7 +31,7 @@ class CNN_Model(object):
     def _build_model(self):
         # CNN model
         self.model = Sequential()
-        self.model.add(Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=(280, 280, 1)))
+        self.model.add(Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=(28, 28, 1)))
         self.model.add(Conv2D(32, (3, 3), activation='relu'))
         self.model.add(MaxPooling2D(pool_size=(2, 2)))
         self.model.add(Dropout(0.25))

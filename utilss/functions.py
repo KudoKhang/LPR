@@ -40,38 +40,77 @@ def remove_space(root):
 
 def try_catch(line1, line2):
     index = len(line1)
+
+    dict_try_catch_line1 = {'0': 'C',
+                            '6': 'C',
+                            'L': 'C',
+                            '2': 'C',
+                            'Z': 'C',
+                            'F': 'C'}
+
+    for i in range(len(line1)):
+        # if i == 2 and len(line1) > 6:
+        #     for key in dict_try_catch_line1.keys():
+        #         if line1[i][0] == key:
+        #             temp = list(line1[i])
+        #             temp[0] = dict_try_catch_line1[key]
+        #             line1[i] = tuple(temp)
+
+        if i == 2 and len(line1) == 3 or len(line1) > 6:
+            for key in dict_try_catch_line1.keys():
+                if line1[i][0] == key:
+                    temp = list(line1[i])
+                    temp[0] = dict_try_catch_line1[key]
+                    line1[i] = tuple(temp)
     line = line1 + line2
 
-    dict_try_catch_line1 = {'0': 'C'}
     dict_try_catch_line2 = {'D': '0',
                             'C': '0',
-                            'B': '8'}
+                            'B': '8',
+                            'E': '8',
+                            'A': '8',
+                            'H': '8',
+                            'K': '4'}
 
     for i in range(len(line)):
-        if i == 2:
-            # Some case classify character to noise --> id == 2 not right
-            continue
+        if i != 2 and len(line) == 8:
+            for key in dict_try_catch_line2.keys():
+                if line[i][0] == key:
+                    temp = list(line[i])
+                    temp[0] = dict_try_catch_line2[key]
+                    line[i] = tuple(temp)
 
-        for key in dict_try_catch_line2.keys():
-            if line[i][0] == key:
-                temp = list(line[i])
-                temp[0] = dict_try_catch_line2[key]
-                line[i] = tuple(temp)
+        elif i == 2 and len(line) == 8:
+            for key in dict_try_catch_line1.keys():
+                if line[i][0] == key:
+                    temp = list(line[i])
+                    temp[0] = dict_try_catch_line1[key]
+                    line[i] = tuple(temp)
+
 
     return line[:index], line[index:]
 
-def padding(thresh, h=400):
-    # Denoise -> padding to sqare -> resize to (28x28) -> forward to model classify
-    char_origin = denoise(thresh)
-    thresh = imutils.resize(thresh, height=h)
-    thresh = cv2.medianBlur(thresh, 5)
+def draw_bbox_character(plate, bbox):
+    for bb in bbox:
+        x1, y1, x2, y2 = bb
+        cv2.rectangle(plate, (x1, y1), (x2, y2), (0, 255, 0), 1)
 
+def padding(thresh, h=28):
     char_bg = np.zeros((h, h))
     x = int((h - thresh.shape[1]) / 2)
     char_bg[0:h, x: x + thresh.shape[1]] = thresh
-    char_bg = denoise(char_bg)
-    char_bg = cv2.resize(char_bg, (28, 28))
-    return char_bg, char_origin
+    return char_bg
+
+def binary_image(char):
+    h, w = char.shape[:2]
+    char = imutils.resize(char, height=28)
+    char_gray = cv2.cvtColor(char, cv2.COLOR_BGR2GRAY)
+    char_blur = cv2.GaussianBlur(char_gray, (1, 1), 1)
+    _, thresh = cv2.threshold(char_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    thresh_inv = cv2.bitwise_not(thresh)
+    thresh_inv = denoise(thresh_inv)
+    thresh_ori = cv2.resize(thresh_inv, (w,h))
+    return thresh_inv, thresh_ori
 
 def format(candidates, h_avg):
     first_line = []
@@ -86,9 +125,9 @@ def format(candidates, h_avg):
     # Determined character to line1 or line2 by compare y_max with h_avg (height average character)
     for candidate, coordinate in candidates:
         if coordinate[0] + 0.75 * h_avg > y_max:
-            first_line.append((candidate, coordinate[1]))
-        else:
             second_line.append((candidate, coordinate[1]))
+        else:
+            first_line.append((candidate, coordinate[1]))
 
     def take_second(s):
         return s[1]
@@ -101,9 +140,8 @@ def format(candidates, h_avg):
 
     if len(second_line) == 0:
         license_plate = "".join([str(ele[0]) for ele in first_line])
-        license_plate = license_plate[:3] + '-' + license_plate[3:]
     else:
-        license_plate = "".join([str(ele[0]) for ele in second_line]) + "-" +  "".join([str(ele[0]) for ele in first_line])
+        license_plate = "".join([str(ele[0]) for ele in first_line]) + "".join([str(ele[0]) for ele in second_line])
 
     return license_plate
 

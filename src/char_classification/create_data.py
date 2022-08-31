@@ -38,8 +38,8 @@ for fi in tqdm(os.listdir(path)):
     img_fi_path = [name for name in os.listdir(path + fi) if name.endswith(('jpg', 'png'))]
     for img_path in img_fi_path:
         img = cv2.imread(path + fi + "/" + img_path, cv2.IMREAD_GRAYSCALE)
-        img = cv2.resize(img, (28, 28), cv2.INTER_AREA)
-        img = img.reshape((28, 28, 1))
+        img = cv2.resize(img, (140, 140), cv2.INTER_AREA)
+        img = img.reshape((140, 140, 1))
         data.append((img, label))
 
 np.save("./data/digits.npy", data)
@@ -98,8 +98,8 @@ for fi in tqdm(os.listdir(path)):
     img_fi_path = [name for name in os.listdir(path + fi) if name.endswith(('jpg', 'png'))]
     for img_path in img_fi_path:
         img = cv2.imread(path + fi + "/" + img_path, cv2.IMREAD_GRAYSCALE)
-        img = cv2.resize(img, (28, 28), cv2.INTER_AREA)
-        img = img.reshape((28, 28, 1))
+        img = cv2.resize(img, (140, 140), cv2.INTER_AREA)
+        img = img.reshape((140, 140, 1))
         data.append((img, label))
 
 np.save("./data/alphas.npy", data)

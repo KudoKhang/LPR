@@ -141,9 +141,11 @@ cython_debug/
 .idea
 *.DS_Store
 
-tests
+tests/
 src/
 data/
 output/
 visualize.jpg
 debug/
+logs/
+yolov5/

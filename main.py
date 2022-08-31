@@ -1,11 +1,9 @@
 from utilss import *
-
 # Init models
 model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt', force_reload=True)
 model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_087.pt')
 model_recognize_character = CNN_Model(trainable=False).model
-model_recognize_character.load_weights('./src/weights/classify_character.h5')
-
+model_recognize_character.load_weights('src/weights/classify_character.h5')
 
 def detect_plate(img):
     results = model_detect(img)
@@ -18,36 +16,38 @@ def detect_plate(img):
     else:
         return None, None
 
-def detect_char(lpRegion, show_binary=False):
+def detect_char(plate, show_binary=False):
     condidates = []
     condidates_for_visualize = []
-    results = model_detect_character(lpRegion)
+    results = model_detect_character(plate)
     t = results.pandas().xyxy[0]
 
     # Check threshold!!! Get 8 character co confident lon nhat | Sort theo confident
-    bbox = np.int32(np.array(t)[:,:4][np.where(np.array(t)[:,4] > 0.7)]).tolist()
+    bbox = np.int32(np.array(t)[:,:4][np.where(np.array(t)[:,4] > 0.5)]).tolist()
     height_char = []
+
+    # TODO: If h < h_avg or area < area_avg --> noise --> remove
 
     if len(bbox) > 0:
         for bb in bbox:
             x1, y1, x2, y2 = bb
             height_char.append(y2 - y1)
-            char = lpRegion.copy()[y1:y2, x1:x2]
-            V = cv2.split(cv2.cvtColor(char, cv2.COLOR_BGR2HSV))[2]
-            T = threshold_local(V, 31, offset=10, method="gaussian")
-            thresh = (V > T).astype("uint8") * 255
-            thresh = cv2.bitwise_not(thresh)
-            character, character_no_resize = padding(thresh)
+            char = plate.copy()[y1:y2, x1:x2]
+
+            thresh, thresh_ori = binary_image(char)
+
+            character = padding(thresh)
             condidates.append((character, (y1, x1)))
-            condidates_for_visualize.append((character_no_resize, (y1, x1)))
-            cv2.rectangle(lpRegion, (x1, y1), (x2, y2), (0, 255, 0), 1)
+            condidates_for_visualize.append((thresh_ori, (y1, x1)))
+
+        draw_bbox_character(plate, bbox)
 
         if show_binary:
-            bg = np.zeros(lpRegion.shape[:2])
+            bg = np.zeros(plate.shape[:2])
             for c_b in condidates_for_visualize:
                 y, x = c_b[1]
                 binary = c_b[0]
-                h, w = binary.shape
+                h, w = binary.shape[:2]
                 bg[y:y + h, x:x + w] = binary
             cv2.imshow('Binary', cv2.resize(bg, tuple([a * 3 for a in bg.shape[::-1]])))
 
@@ -162,5 +162,5 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/private_test/GOOD/78H00063.jpg')
-    # eval('./data/private_test/GOOD/')
+    # process_image('data/private_test/GOOD/78C01076.jpg')
+    eval('./data/private_test/GOOD/')
