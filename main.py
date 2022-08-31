@@ -10,7 +10,8 @@ def detect_plate(img):
     t = results.pandas().xyxy[0]
     if len(t) > 0:
         # TODO: check area and confident
-        bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])])
+        bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])]) # Max confident
+        # bbox = np.int32(np.array(t)[:, :4][np.argmax((np.array(t)[:, 2] - np.array(t)[:, 0]) * (np.array(t)[:, 3] - np.array(t)[:, 1]))]) # Max area
         plate = crop(img, bbox)
         return plate, bbox
     else:
@@ -22,11 +23,12 @@ def detect_char(plate, show_binary=False):
     results = model_detect_character(plate)
     t = results.pandas().xyxy[0]
 
-    # Check threshold!!! Get 8 character co confident lon nhat | Sort theo confident
-    bbox = np.int32(np.array(t)[:,:4][np.where(np.array(t)[:,4] > 0.5)]).tolist()
-    height_char = []
+    # Take the 8 characters with the highest confidence score
+    bbox = np.int32(np.array(t)[:,:5][np.where(np.array(t)[:,4] > 0.5)]).tolist()
+    bbox.sort(key=lambda x:x[4], reverse=True)
+    bbox = np.array(bbox[:8])[:, :4].tolist()
 
-    # TODO: If h < h_avg or area < area_avg --> noise --> remove
+    height_char = []
 
     if len(bbox) > 0:
         for bb in bbox:
@@ -40,7 +42,7 @@ def detect_char(plate, show_binary=False):
             condidates.append((character, (y1, x1)))
             condidates_for_visualize.append((thresh_ori, (y1, x1)))
 
-        draw_bbox_character(plate, bbox)
+        # draw_bbox_character(plate, bbox)
 
         if show_binary:
             bg = np.zeros(plate.shape[:2])
@@ -80,6 +82,8 @@ def recognize_char(candidates):
 
 def E2E(image):
     plate, bbox = detect_plate(image)
+
+    plate = automatic_brightness_and_contrast(plate)
 
     # plate = transform_plate(plate)
 
@@ -162,5 +166,9 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    # process_image('data/private_test/GOOD/78C01076.jpg')
+    # process_image('data/private_test/GOOD/92C14796.jpg')
     eval('./data/private_test/GOOD/')
+
+"""
+    transform: 77C11712.jpg
+"""
