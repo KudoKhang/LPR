@@ -181,26 +181,17 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=1):
     # Calculate alpha and beta values
     alpha = 255 / (maximum_gray - minimum_gray)
     beta = -minimum_gray * alpha
-
-    '''
-    # Calculate new histogram with desired range and show histogram 
-    new_hist = cv2.calcHist([gray],[0],None,[256],[minimum_gray,maximum_gray])
-    plt.plot(hist)
-    plt.plot(new_hist)
-    plt.xlim([0,256])
-    plt.show()
-    '''
-
+    
     auto_result = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
     return auto_result
 
 def transform_plate(img):
     w, h = img.shape[:2]
 
-    pt_A = [6, 2]
-    pt_B = [3, 47]
-    pt_C = [56, 56]
-    pt_D = [62, 12]
+    pt_A = [8, 4]
+    pt_B = [4, 71]
+    pt_C = [88, 69]
+    pt_D = [92, 5]
 
     width_AD = np.sqrt(((pt_A[0] - pt_D[0]) ** 2) + ((pt_A[1] - pt_D[1]) ** 2))
     width_BC = np.sqrt(((pt_B[0] - pt_C[0]) ** 2) + ((pt_B[1] - pt_C[1]) ** 2))

@@ -42,7 +42,7 @@ def detect_char(plate, show_binary=False):
             condidates.append((character, (y1, x1)))
             condidates_for_visualize.append((thresh_ori, (y1, x1)))
 
-        # draw_bbox_character(plate, bbox)
+        draw_bbox_character(plate, bbox)
 
         if show_binary:
             bg = np.zeros(plate.shape[:2])
@@ -166,9 +166,10 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    # process_image('data/private_test/GOOD/92C14796.jpg')
-    eval('./data/private_test/GOOD/')
+    process_image('data/test2.jpg')
+    # eval('./data/private_test/GOOD/')
 
 """
     transform: 77C11712.jpg
+    paper: 61H06849
 """
