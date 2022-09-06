@@ -14,7 +14,7 @@ LPRPredictor = LicensePlateRecognition()
 
 app_desc = """<h2>Try this app by uploading any image with `predict/image`</h2>"""
 
-app = FastAPI(title="Tensorflow FastAPI Start Pack", description=app_desc)
+app = FastAPI(title="Lisence Plate Recognition", description=app_desc)
 
 @app.get("/", include_in_schema=False)
 async def index():
@@ -28,7 +28,7 @@ async def predict_api(file: UploadFile = File(...)):
 
     image = read_image_file(await file.read())
     prediction = LPRPredictor.predict(image)
-
+    # print(prediction)
     return prediction
 
 
