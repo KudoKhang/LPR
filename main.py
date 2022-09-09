@@ -166,7 +166,7 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/test2.jpg')
+    process_image('data/private_test/GOOD/77C11712.jpg')
     # eval('./data/private_test/GOOD/')
 
 """
