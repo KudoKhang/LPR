@@ -3,6 +3,7 @@ import argparse
 import os
 import cv2
 import numpy as np
+import time
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -12,7 +13,10 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
+    start = time.time()
     LPRPredictor = LicensePlateRecognition()
     img = cv2.imread(args.input)
     result = LPRPredictor.predict(img)
+    end = round((time.time() - start) * 1e3, 2)
+    print(f'Time to inference: {end}')
     print(result)
