@@ -12,3 +12,6 @@ pandas
 tqdm
 pyyaml
 seaborn
+uvicorn
+fastapi
+python-multipart
