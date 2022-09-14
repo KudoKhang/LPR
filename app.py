@@ -9,10 +9,11 @@ from PIL import Image
 def read_image_file(file) -> Image.Image:
     image = Image.open(BytesIO(file))
     image = np.array(image)[:,:,::-1]
+    return image
 
 LPRPredictor = LicensePlateRecognition()
 
-app_desc = """<h2>Try this app by uploading any image with `predict/image`</h2>"""
+app_desc = """<h2>Try this app by uploading any image with `predict`</h2>"""
 
 app = FastAPI(title="Lisence Plate Recognition", description=app_desc)
 
@@ -27,7 +28,6 @@ async def predict_api(file: UploadFile = File(...)):
         return "Image must be jpg or png format!"
     image = read_image_file(await file.read())
     prediction = LPRPredictor.predict(image)
-    print(prediction)
     return prediction
 
 if __name__ == "__main__":
