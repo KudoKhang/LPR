@@ -3,9 +3,9 @@ from utilss import *
 class LicensePlateRecognition:
     def __init__(self, weight_plate='src/weights/plate_yolo10k.pt', weight_character='src/weights/character_yolo_087.pt', weight_classify='src/weights/classify_character.h5'):
         self.model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path=weight_plate,
-                                      force_reload=True)
+                                      verbose=False)
         self.model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom',
-                                                path=weight_character)
+                                                path=weight_character, verbose=False)
         self.model_recognize_character = CNN_Model(trainable=False).model
         self.model_recognize_character.load_weights(weight_classify)
 
@@ -98,9 +98,9 @@ class LicensePlateRecognition:
         candidates_predict = self.recognize_char(candidates_binary)
         license_plate = format(candidates_predict, h_avg)
         # img = draw_labels_and_boxes(image, license_plate, bbox)
-        return image, license_plate
+        return image, license_plate, bbox
 
     def predict(self, image_path):
-        # img = cv2.imread(image_path)
-        img, license_plate = self.E2E(image_path)
-        return license_plate
+        # https://stackoverflow.com/questions/55873174/how-do-i-return-an-image-in-fastapi
+        img, license_plate, bbox = self.E2E(image_path)
+        return license_plate, str(bbox)
