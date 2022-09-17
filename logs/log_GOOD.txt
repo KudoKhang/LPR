@@ -29,6 +29,5 @@ Image: 62M1011.jpg      ---Failed--- Ground Trust: 62M1011    -   Predict: 62M11
 Image: 78C10416(2).jpg  ---Failed--- Ground Trust: 78C10416   -   Predict: 7HC10416 
 Image: 82C00203.jpg     ---Failed--- Ground Trust: 82C00203   -   Predict: 82C0C403 
 Image: 76C06496.jpg     ---Failed--- Ground Trust: 76C06496   -   Predict: 6CC6496 
------------------------------------------------------------------------------------------- 
 Accuracy of private test --./data/private_test/GOOD/-- | 248 / 279 = 88.89 %
 Total error image is: 0. See logs here 👉 ---tests/error_val.txt---

@@ -18,7 +18,7 @@ def get_num_error(path_err):
         num_lines = sum(1 for line in f)
         return num_lines
 
-def draw_labels_and_boxes(image, labels, boxes):
+def draw_labels_and_boxes(image, labels, boxes, bbox_character):
     x_min = round(boxes[0])
     y_min = round(boxes[1])
     x_max = round(boxes[2])
@@ -27,11 +27,13 @@ def draw_labels_and_boxes(image, labels, boxes):
     image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2)
     image = cv2.putText(image, labels, (x_min - 40, y_min), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 255), thickness=2)
 
+    draw_bbox_character(image, bbox_character, x_min, y_min)
+
     return image
 
 def remove_space(root):
     # 76C12345 (2).jpg --> 76C12345(2).jpg
-    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
+    path_image = [name for name in os.listdir(root) if name.endswith(('jpg', 'png', 'jpeg'))]
     for path in tqdm(path_image):
         new_name = ''.join(path.split())
         os.rename(os.path.join(root + path), os.path.join(root + new_name))
@@ -72,10 +74,10 @@ def try_catch(line1, line2):
 
     return line[:index], line[index:]
 
-def draw_bbox_character(plate, bbox):
+def draw_bbox_character(plate, bbox, _x, _y):
     for bb in bbox:
         x1, y1, x2, y2 = bb
-        cv2.rectangle(plate, (x1, y1), (x2, y2), (0, 255, 0), 1)
+        cv2.rectangle(plate, (_x + x1, _y + y1), (_x + x2, _y + y2), (0, 255, 0), 1)
 
 def padding(thresh, h=28):
     char_bg = np.zeros((h, h))
@@ -149,7 +151,6 @@ def denoise(char):
 
     return char
 
-
 def automatic_brightness_and_contrast(image, clip_hist_percent=1):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -210,17 +211,10 @@ def transform_plate(img):
     img = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
     return img
 
+def expanded_bbox(bbox, h_expand=1, w_expand=1):
+    bbox[:, 0] = bbox[:, 0] - w_expand
+    bbox[:, 1] = bbox[:, 1] - h_expand
+    bbox[:, 2] = bbox[:, 2] + w_expand
+    bbox[:, 3] = bbox[:, 3] + h_expand
+    return bbox.tolist()
 # ------------------------------------------------------------------------------------------------------------
-def timeit(func):
-    """
-    https://stackoverflow.com/questions/35656239/how-do-i-time-script-execution-time-in-pycharm-without-adding-code-every-time
-    Decorator for measuring function's running time.
-    """
-    def measure_time(*args, **kw):
-        start_time = time.time()
-        result = func(*args, **kw)
-        print("Processing time of %s(): %.2f seconds."
-              % (func.__qualname__, time.time() - start_time))
-        return result
-
-    return measure_time
