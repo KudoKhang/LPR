@@ -157,7 +157,7 @@ def process_folder(path_folder='data/pravite_test_500/', output_folder='output/r
             print(f"Error: {path}")
     print(f"\nTotal error image is: {get_num_error(err_log)}. See logs here 👉 ---{err_log}---")
 
-def process_image(image_path, show_image=False):
+def process_image(image_path, show_image=True):
     img = cv2.imread(image_path)
     img, license_plate = E2E(img)
     print(license_plate)
@@ -168,7 +168,7 @@ def process_image(image_path, show_image=False):
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
     start = time.time()
-    process_image('data/private_test/GOOD/92C14796.jpg')
+    process_image('75C07872.png')
     print(time.time() - start)
     # eval('./data/private_test/GOOD/')
 
