@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 from utilss import *
@@ -46,37 +47,39 @@ def draw_corner(img, t):
 def get_true_coord(A, B, C, D, bbox_plate):
     w, h = bbox_plate[2] - bbox_plate[0], bbox_plate[3] - bbox_plate[1]
 
-    if len(A) > 1:
-        temp = []
-        for center in A:
-            dist = math.dist(center, (0, 0))
-            temp.append((dist, center))
-        temp = np.array(temp)
-        A = temp[:, 1][np.where(np.argmax(temp[:, 0]))]
+    _dict = {'A': (A, (0, 0)),
+             'B': (B, (0, h)),
+             'C': (C, (w, h)),
+             'D': (D, (w, 0))}
 
-    if len(B) > 1:
-        temp = []
-        for center in B:
-            dist = math.dist(center, (0, h))
-            temp.append((dist, center))
-        temp = np.array(temp)
-        B = temp[:, 1][np.where(np.argmax(temp[:, 0]))]
+    for key in _dict.keys():
+        if len(_dict[key][0]) > 1:
+            temp = []
+            for center in _dict[key][0]:
+                dist = math.dist(center, _dict[key][1])
+                temp.append((dist, center))
+            temp = np.array(temp)
+            _dict[key] = (temp[:, 1][np.where(np.argmax(temp[:, 0]))], '000')
 
-    if len(C) > 1:
-        temp = []
-        for center in C:
-            dist = math.dist(center, (w, h))
-            temp.append((dist, center))
-        temp = np.array(temp)
-        C = temp[:, 1][np.where(np.argmax(temp[:, 0]))]
+    if len(A) == 0:
+        x = B[0][0] + D[0][0] - C[0][0]
+        y = B[0][1] + D[0][1] - C[0][1]
+        A = [[x, y]]
 
-    if len(D) > 1:
-        temp = []
-        for center in D:
-            dist = math.dist(center, (w, 0))
-            temp.append((dist, center))
-        temp = np.array(temp)
-        D = temp[:, 1][np.where(np.argmax(temp[:, 0]))]
+    if len(B) == 0:
+        x = A[0][0] + C[0][0] - D[0][0]
+        y = A[0][1] + C[0][1] - D[0][1]
+        B = [[x, y]]
+
+    if len(C) == 0:
+        x = B[0][0] + D[0][0] - A[0][0]
+        y = B[0][1] + D[0][1] - A[0][1]
+        C = [[x, y]]
+
+    if len(D) == 0:
+        x = A[0][0] + C[0][0] - B[0][0]
+        y = A[0][1] + C[0][1] - B[0][1]
+        D = [[x, y]]
 
     return A[0], B[0], C[0], D[0]
 
@@ -94,20 +97,21 @@ def ABCD(bbox, img, bbox_plate):
         else:
             D.append(center) if center[1] < h / 2 else C.append(center)
 
-    A, B, C, D = get_true_coord(A, B, C, D, bbox_plate)
-    return A, B, C, D
+    return get_true_coord(A, B, C, D, bbox_plate)
 
-def detect_corner(img, bbox_plate):
+def detect_corner(img, bbox_plate, is_draw=True):
     results = model_detect_corner(img)
     t = results.pandas().xyxy[0]
     bbox = np.int32(np.array(t)[:, :4])
 
-    draw_corner(img, t)
+    if is_draw:
+        draw_corner(img, t)
 
     try:
         pt_A, pt_B, pt_C, pt_D = ABCD(bbox, img, bbox_plate)
         img = transform_plate(img, pt_A, pt_B, pt_C, pt_D)
     except:
+        #TODO: return original plate
         return img
     return img
 
@@ -135,12 +139,22 @@ def detect_plate(img):
     else:
         return None, None
 
-img = cv2.imread('data/private_test/GOOD/76C06181(1).jpg')
-img_ori = img.copy()
-plate, bbox = detect_plate(img)
-plate_transform = detect_corner(plate, bbox)
-cv2.imwrite('test1.png', plate)
-# img = cv2.resize(img, tuple(np.array(list(img.shape[:2])) * 10)[::-1])
-cv2.imshow('original', plate)
-cv2.imshow('result', plate_transform)
-cv2.waitKey(0)
+def process_image(path='data/private_test/GOOD/76C06593.jpg'):
+    img = cv2.imread(path)
+    img_ori = img.copy()
+    plate, bbox = detect_plate(img)
+    plate_transform = detect_corner(plate, bbox)
+    # cv2.imwrite('test1.png', plate)
+    # img = cv2.resize(img, tuple(np.array(list(img.shape[:2])) * 10)[::-1])
+    cv2.imshow('original', plate)
+    cv2.imshow('result', plate_transform)
+    cv2.waitKey(0)
+
+def process_folder(root='data/private_test/GOOD/'):
+    lst_img = [root + name for name in os.listdir(root) if name.endswith(('jpg'))]
+    for path in lst_img:
+        process_image(path)
+
+# process_image('data/private_test/GOOD/76R00102(2).jpg')
+process_image('88H0009.jpg')
+# process_folder()
