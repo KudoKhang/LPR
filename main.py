@@ -1,6 +1,6 @@
 from utilss import *
 # Init models
-model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt', force_reload=True)
+model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt')
 model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_087.pt')
 model_recognize_character = CNN_Model(trainable=False).model
 model_recognize_character.load_weights('src/weights/classify_character.h5')
