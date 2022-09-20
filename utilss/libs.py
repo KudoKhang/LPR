@@ -21,3 +21,5 @@ import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
+np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+import math

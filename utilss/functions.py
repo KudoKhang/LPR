@@ -2,10 +2,16 @@ import os.path
 
 from .libs import *
 
-
 ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'K', 9: 'L', 10: 'M', 11: 'N', 12: 'P',
               13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2', 24: '3',
               25: '4', 26: '5', 27: '6', 28: '7', 29: '8', 30: '9', 31: "Background"}
+
+def draw(img, bbox):
+    cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 255), 2)
+
+def get_center(bbox):
+    cx, cy = bbox[0] + (bbox[2] - bbox[0]) / 2, bbox[1] + (bbox[3] - bbox[1]) / 2
+    return [cx, cy]
 
 def crop(image, bbox):
     return image[bbox[1]:bbox[3], bbox[0]:bbox[2]]
@@ -17,6 +23,12 @@ def get_num_error(path_err):
     with open(path_err, 'r') as f:
         num_lines = sum(1 for line in f)
         return num_lines
+
+def draw_corner(img, t):
+    # bbox = np.int32(np.array(t)[:, :4][np.where(np.array(t)[:, 4] > 0.6)]
+    bbox = np.int32(np.array(t)[:, :4])
+    for bb in bbox:
+        draw(img, bb)
 
 def draw_labels_and_boxes(image, labels, boxes):
     x_min = round(boxes[0])
@@ -45,7 +57,8 @@ def try_catch(line1, line2):
                             'L': 'C',
                             '2': 'C',
                             'Z': 'C',
-                            'F': 'C'}
+                            'F': 'C',
+                            '8': 'C'}
 
     dict_try_catch_line2 = {'D': '0',
                             'C': '0',
@@ -149,7 +162,6 @@ def denoise(char):
 
     return char
 
-
 def automatic_brightness_and_contrast(image, clip_hist_percent=1):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -185,13 +197,9 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=1):
     auto_result = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
     return auto_result
 
-def transform_plate(img):
+def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
+    # A-B-C-D : counter-clockwise
     w, h = img.shape[:2]
-
-    pt_A = [8, 4]
-    pt_B = [4, 71]
-    pt_C = [88, 69]
-    pt_D = [92, 5]
 
     width_AD = np.sqrt(((pt_A[0] - pt_D[0]) ** 2) + ((pt_A[1] - pt_D[1]) ** 2))
     width_BC = np.sqrt(((pt_B[0] - pt_C[0]) ** 2) + ((pt_B[1] - pt_C[1]) ** 2))
@@ -211,4 +219,73 @@ def transform_plate(img):
     img = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
     return img
 
+def interpolate_end_point(A, B, C, D, coefficient_expand = 1):
+    # Tính chất hình bình hành: vector cặp cạnh đối diện luôn bằng nhau
+    if len(A) == 0:
+        x = B[0][0] + D[0][0] - C[0][0]
+        y = B[0][1] + D[0][1] - C[0][1]
+        A = [[x, y]]
+
+    if len(B) == 0:
+        x = A[0][0] + C[0][0] - D[0][0]
+        y = A[0][1] + C[0][1] - D[0][1]
+        B = [[x, y]]
+
+    if len(C) == 0:
+        x = B[0][0] + D[0][0] - A[0][0]
+        y = B[0][1] + D[0][1] - A[0][1]
+        C = [[x, y]]
+
+    if len(D) == 0:
+        x = A[0][0] + C[0][0] - B[0][0]
+        y = A[0][1] + C[0][1] - B[0][1]
+        D = [[x, y]]
+
+    return A[0], B[0], C[0], D[0]
+
+def get_true_coord(A, B, C, D, bbox_plate):
+    w, h = bbox_plate[2] - bbox_plate[0], bbox_plate[3] - bbox_plate[1]
+
+    _dict = {'A': (A, (0, 0)),
+             'B': (B, (0, h)),
+             'C': (C, (w, h)),
+             'D': (D, (w, 0))}
+
+    for key in _dict.keys():
+        if len(_dict[key][0]) > 1:
+            temp = []
+            for center in _dict[key][0]:
+                dist = math.dist(center, _dict[key][1])
+                temp.append((dist, center))
+            temp = np.array(temp)
+            _dict[key] = (temp[:, 1][np.where(np.argmax(temp[:, 0]))], '000')
+
+    return interpolate_end_point(A, B, C, D)
+
+def ABCD(bbox, img, bbox_plate):
+    h, w = img.shape[:2]
+    A = []
+    B = []
+    C = []
+    D = []
+    for bb in bbox:
+        center = get_center(bb)
+        if center[0] < w / 2:
+            A.append(center) if center[1] < h / 2 else B.append(center)
+        else:
+            D.append(center) if center[1] < h / 2 else C.append(center)
+
+    return get_true_coord(A, B, C, D, bbox_plate)
+
+def expand_bbox(bbox, img, scale=0.1):
+    H, W = img.shape[:2]
+    x1, y1, x2, y2 = bbox
+    h_expand = int((y2 - y1) * scale)
+
+    x1_exp = 0 if (x1 - h_expand) < 0 else (x1 - h_expand)
+    y1_exp = 0 if (y1 - h_expand) < 0 else (y1 - h_expand)
+    x2_exp = W if (x2 + h_expand) > W else (x2 + h_expand)
+    y2_exp = H if (y2 - h_expand) > H else (y2 + h_expand)
+
+    return (x1_exp, y1_exp, x2_exp, y2_exp)
 # ------------------------------------------------------------------------------------------------------------

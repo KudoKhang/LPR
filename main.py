@@ -4,6 +4,32 @@ model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/
 model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/character_yolo_087.pt')
 model_recognize_character = CNN_Model(trainable=False).model
 model_recognize_character.load_weights('src/weights/classify_character.h5')
+model_detect_corner = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/detect_corner_v2.pt')
+
+def detect_corner_and_transform(img, bbox_plate, is_draw=True):
+    results = model_detect_corner(img)
+    t = results.pandas().xyxy[0]
+    bbox = np.int32(np.array(t)[:, :4])
+
+    if is_draw:
+        draw_corner(img, t)
+
+    try:
+        pt_A, pt_B, pt_C, pt_D = ABCD(bbox, img, bbox_plate)
+        try:
+            exp = 4
+            pt_A = [pt_A[0] - exp, pt_A[1] - exp]
+            pt_B = [pt_B[0] - exp, pt_B[1] + exp]
+            pt_C = [pt_C[0] + exp, pt_C[1] + exp]
+            pt_D = [pt_D[0] + exp, pt_D[1] - exp]
+        except:
+            pt_A, pt_B, pt_C, pt_D = pt_A, pt_B, pt_C, pt_D
+        img = transform_plate(img, pt_A, pt_B, pt_C, pt_D)
+    except:
+        #TODO: return original plate
+        return img
+
+    return img
 
 def detect_plate(img):
     results = model_detect(img)
@@ -11,8 +37,8 @@ def detect_plate(img):
     if len(t) > 0:
         # TODO: check area and confident
         bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])]) # Max confident
-        # bbox = np.int32(np.array(t)[:, :4][np.argmax((np.array(t)[:, 2] - np.array(t)[:, 0]) * (np.array(t)[:, 3] - np.array(t)[:, 1]))]) # Max area
-        plate = crop(img, bbox)
+        bbox_exp = expand_bbox(bbox, img)
+        plate = crop(img, bbox_exp)
         return plate, bbox
     else:
         return None, None
@@ -83,6 +109,8 @@ def recognize_char(candidates):
 def E2E(image):
     plate, bbox = detect_plate(image)
 
+    plate = detect_corner_and_transform(plate, bbox, is_draw=False)
+
     plate = automatic_brightness_and_contrast(plate)
 
     # plate = transform_plate(plate)
@@ -101,10 +129,10 @@ def eval(root='../private_test/BAD/'):
     path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
     true, total_image= 0, len(path_image)
 
-    os.makedirs('tests/', exist_ok=True)
-    err_log = 'tests/error_val.txt'
+    os.makedirs('logs/', exist_ok=True)
+    err_log = 'logs/error_val.txt'
     BoG = root.split('/')[-2]
-    log = f'tests/log_{BoG}.txt'
+    log = f'logs/log_{BoG}.txt'
 
     if os.path.exists(err_log):
         os.remove(err_log)
@@ -166,10 +194,5 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/private_test/GOOD/77C11712.jpg')
-    # eval('./data/private_test/GOOD/')
-
-"""
-    transform: 77C11712.jpg
-    paper: 61H06849
-"""
+    # process_image('data/private_test/GOOD/78C08223.jpg')
+    eval('./data/private_test/GOOD/')

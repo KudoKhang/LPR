@@ -6,7 +6,7 @@ import math
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 
 # Init models
-model_detect_corner = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/detect_corner.pt')
+model_detect_corner = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/detect_corner_v2.pt')
 model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/plate_yolo10k.pt')
 
 def draw(img, bbox):
@@ -44,23 +44,8 @@ def draw_corner(img, t):
     for bb in bbox:
         draw(img, bb)
 
-def get_true_coord(A, B, C, D, bbox_plate):
-    w, h = bbox_plate[2] - bbox_plate[0], bbox_plate[3] - bbox_plate[1]
-
-    _dict = {'A': (A, (0, 0)),
-             'B': (B, (0, h)),
-             'C': (C, (w, h)),
-             'D': (D, (w, 0))}
-
-    for key in _dict.keys():
-        if len(_dict[key][0]) > 1:
-            temp = []
-            for center in _dict[key][0]:
-                dist = math.dist(center, _dict[key][1])
-                temp.append((dist, center))
-            temp = np.array(temp)
-            _dict[key] = (temp[:, 1][np.where(np.argmax(temp[:, 0]))], '000')
-
+def interpolate_end_point(A, B, C, D, coefficient_expand = 1):
+    # Tính chất hình bình hành: vector cặp cạnh đối diện luôn bằng nhau
     if len(A) == 0:
         x = B[0][0] + D[0][0] - C[0][0]
         y = B[0][1] + D[0][1] - C[0][1]
@@ -81,8 +66,32 @@ def get_true_coord(A, B, C, D, bbox_plate):
         y = A[0][1] + C[0][1] - B[0][1]
         D = [[x, y]]
 
-    return A[0], B[0], C[0], D[0]
+    # expanded coordinate
+    A = [A[0][0] - coefficient_expand, A[0][1] - coefficient_expand]
+    B = [B[0][0] - coefficient_expand, B[0][1] + coefficient_expand]
+    C = [C[0][0] + coefficient_expand, C[0][1] + coefficient_expand]
+    D = [D[0][0] + coefficient_expand, D[0][1] - coefficient_expand]
 
+    return A, B, C, D
+
+def get_true_coord(A, B, C, D, bbox_plate):
+    w, h = bbox_plate[2] - bbox_plate[0], bbox_plate[3] - bbox_plate[1]
+
+    _dict = {'A': (A, (0, 0)),
+             'B': (B, (0, h)),
+             'C': (C, (w, h)),
+             'D': (D, (w, 0))}
+
+    for key in _dict.keys():
+        if len(_dict[key][0]) > 1:
+            temp = []
+            for center in _dict[key][0]:
+                dist = math.dist(center, _dict[key][1])
+                temp.append((dist, center))
+            temp = np.array(temp)
+            _dict[key] = (temp[:, 1][np.where(np.argmax(temp[:, 0]))], '000')
+
+    return interpolate_end_point(A, B, C, D)
 
 def ABCD(bbox, img, bbox_plate):
     h, w = img.shape[:2]
@@ -99,7 +108,7 @@ def ABCD(bbox, img, bbox_plate):
 
     return get_true_coord(A, B, C, D, bbox_plate)
 
-def detect_corner(img, bbox_plate, is_draw=True):
+def detect_corner_and_transform(img, bbox_plate, is_draw=True):
     results = model_detect_corner(img)
     t = results.pandas().xyxy[0]
     bbox = np.int32(np.array(t)[:, :4])
@@ -109,6 +118,14 @@ def detect_corner(img, bbox_plate, is_draw=True):
 
     try:
         pt_A, pt_B, pt_C, pt_D = ABCD(bbox, img, bbox_plate)
+        try:
+            exp = 4
+            pt_A = [pt_A[0] - exp, pt_A[1] - exp]
+            pt_B = [pt_B[0] - exp, pt_B[1] + exp]
+            pt_C = [pt_C[0] + exp, pt_C[1] + exp]
+            pt_D = [pt_D[0] + exp, pt_D[1] - exp]
+        except:
+            pt_A, pt_B, pt_C, pt_D = pt_A, pt_B, pt_C, pt_D
         img = transform_plate(img, pt_A, pt_B, pt_C, pt_D)
     except:
         #TODO: return original plate
@@ -143,7 +160,7 @@ def process_image(path='data/private_test/GOOD/76C06593.jpg'):
     img = cv2.imread(path)
     img_ori = img.copy()
     plate, bbox = detect_plate(img)
-    plate_transform = detect_corner(plate, bbox)
+    plate_transform = detect_corner_and_transform(plate, bbox)
     # cv2.imwrite('test1.png', plate)
     # img = cv2.resize(img, tuple(np.array(list(img.shape[:2])) * 10)[::-1])
     cv2.imshow('original', plate)
@@ -155,6 +172,6 @@ def process_folder(root='data/private_test/GOOD/'):
     for path in lst_img:
         process_image(path)
 
-# process_image('data/private_test/GOOD/76R00102(2).jpg')
-process_image('88H0009.jpg')
+process_image('data/private_test/GOOD/76C06323(2).jpg')
+# process_image('88H0009.jpg')
 # process_folder()
