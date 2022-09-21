@@ -45,16 +45,13 @@ def detect_plate(img):
 def detect_char(plate, show_binary=False):
     condidates = []
     condidates_for_visualize = []
-
     results = model_detect_character(plate)
     t = results.pandas().xyxy[0]
 
     # Take the 8 characters with the highest confidence score
     bbox = np.int32(np.array(t)[:,:5][np.where(np.array(t)[:,4] > 0.5)]).tolist()
     bbox.sort(key=lambda x:x[4], reverse=True)
-    bbox = np.array(bbox[:8])[:, :4]
-
-    # bbox = expanded_bbox(bbox)
+    bbox = np.array(bbox[:8])[:, :4].tolist()
 
     height_char = []
 
@@ -62,8 +59,7 @@ def detect_char(plate, show_binary=False):
         for bb in bbox:
             x1, y1, x2, y2 = bb
             height_char.append(y2 - y1)
-
-            char = plate[y1:y2, x1:x2]
+            char = plate.copy()[y1:y2, x1:x2]
 
             thresh, thresh_ori = binary_image(char)
 
@@ -80,7 +76,7 @@ def detect_char(plate, show_binary=False):
                 bg[y:y + h, x:x + w] = binary
             cv2.imshow('Binary', cv2.resize(bg, tuple([a * 3 for a in bg.shape[::-1]])))
 
-        return condidates, sum(height_char) / len(height_char), bbox
+        return condidates, sum(height_char) / len(height_char)
 
     # TODO: Case BBox empty
     return 0, 0
@@ -111,15 +107,20 @@ def E2E(image):
 
     if plate is None:
         return image, 'No License Plate Detected!'
+
+    plate = detect_corner_and_transform(plate, bbox, is_draw=False)
+
+    plate = automatic_brightness_and_contrast(plate)
+
+    candidates_binary, h_avg = detect_char(plate, show_binary=True)
     candidates_predict = recognize_char(candidates_binary)
     license_plate = format(candidates_predict, h_avg)
-    img = draw_labels_and_boxes(image, license_plate, bbox, bbox_character)
+    img = draw_labels_and_boxes(image, license_plate, bbox)
     return img, license_plate
 
 def eval(root='../private_test/BAD/'):
     remove_space(root) # 76C12345 (2).jpg --> 76C12345.jpg
-
-    path_image = [name for name in os.listdir(root) if name.endswith(('jpg', 'png', 'jpeg'))]
+    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
     true, total_image= 0, len(path_image)
 
     os.makedirs('logs/', exist_ok=True)
@@ -137,12 +138,13 @@ def eval(root='../private_test/BAD/'):
             label = path.split('(')[0] if '(' in path else path.split('.')[0] # Case 74C12355.jpg or 74C12355(1).jpg
             img = cv2.imread(os.path.join(root, path))
             img, license_plate = E2E(img)
-            if license_plate == label:
+            predict = ''.join(license_plate.split('-'))
+            if  predict == label:
                 true += 1
             else:
-                print(f"Image: {path: <16} ---Failed--- Ground Trust: {label: <10} {'-': <3} Predict: {license_plate}")
+                print(f"Image: {path: <16} ---Failed--- Ground Trust: {label: <10} {'-': <3} Predict: {predict}")
                 with open(log, 'a') as f:
-                    f.write(f"Image: {path: <16} ---Failed--- Ground Trust: {label: <10} {'-': <3} Predict: {license_plate} \n")
+                    f.write(f"Image: {path: <16} ---Failed--- Ground Trust: {label: <10} {'-': <3} Predict: {predict} \n")
                     f.close()
         except:
             print(f"Error: {path}")
@@ -151,7 +153,7 @@ def eval(root='../private_test/BAD/'):
                 f.write(f"{path} \n")
                 f.close()
 
-    content = f"{'-' * 90} \nAccuracy of private test --{root}-- | {true} / {total_image} = {round(true * 100 / total_image, 2)} %\nTotal error image is: {get_num_error(err_log)}. See logs here 👉 ---{log}---"
+    content = f"{'-' * 90} \nAccuracy of private test --{root}-- | {true} / {total_image} = {round(true * 100 / total_image, 2)} %\nTotal error image is: {get_num_error(err_log)}. See logs here 👉 ---{err_log}---"
     print(content)
     with open(log, 'a') as f:
         f.write(content)
@@ -177,20 +179,14 @@ def process_folder(path_folder='data/pravite_test_500/', output_folder='output/r
             print(f"Error: {path}")
     print(f"\nTotal error image is: {get_num_error(err_log)}. See logs here 👉 ---{err_log}---")
 
-def process_image(image_path, show_image=True):
-    start = time.time()
+def process_image(image_path):
     img = cv2.imread(image_path)
     img, license_plate = E2E(img)
-    print(time.time() - start)
     print(license_plate)
-    if show_image:
-        cv2.imshow('Result LPR Predict', img)
-        cv2.waitKey(0)
+    cv2.imshow('Result LPR Predict', img)
+    cv2.waitKey(0)
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/private_test/100/76C09970.jpg')
-    # eval('./data/private_test/100/')
-    process_image('data/dataset1.jpg')
+    process_image('88H0009.jpg')
     # eval('./data/private_test/GOOD/')
-
