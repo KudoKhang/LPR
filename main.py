@@ -35,7 +35,6 @@ def detect_plate(img):
     results = model_detect(img)
     t = results.pandas().xyxy[0]
     if len(t) > 0:
-        # TODO: check area and confident
         bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])]) # Max confident
         bbox_exp = expand_bbox(bbox, img)
         plate = crop(img, bbox_exp)
@@ -99,7 +98,6 @@ def recognize_char(candidates):
     candidates = []
     for i in range(len(result_idx)):
         if result_idx[i] == 31:  # if is background or noise, ignore it
-            # If idx == 31, expand area bbox --> 110 % -- 78C00149(2).jpg
             char_err = characters[i]
             continue
         candidates.append((ALPHA_DICT[result_idx[i]], coordinates[i]))
@@ -109,14 +107,12 @@ def recognize_char(candidates):
 def E2E(image):
     plate, bbox = detect_plate(image)
 
+    if plate is None:
+        return image, 'No License Plate Detected!'
+
     plate = detect_corner_and_transform(plate, bbox, is_draw=False)
 
     plate = automatic_brightness_and_contrast(plate)
-
-    # plate = transform_plate(plate)
-
-    if plate is None:
-        return image, 'No License Plate Detected!'
 
     candidates_binary, h_avg = detect_char(plate, show_binary=True)
     candidates_predict = recognize_char(candidates_binary)
@@ -194,5 +190,5 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    # process_image('data/private_test/GOOD/78C08223.jpg')
-    eval('./data/private_test/GOOD/')
+    process_image('data/dataset1.jpg')
+    # eval('./data/private_test/GOOD/')
