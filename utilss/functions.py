@@ -3,18 +3,23 @@ import os.path
 from .libs import *
 
 ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'K', 9: 'L', 10: 'M', 11: 'N', 12: 'P',
-              13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2', 24: '3',
+              13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2',
+              24: '3',
               25: '4', 26: '5', 27: '6', 28: '7', 29: '8', 30: '9', 31: "Background"}
+
 
 def draw(img, bbox):
     cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 255), 2)
+
 
 def get_center(bbox):
     cx, cy = bbox[0] + (bbox[2] - bbox[0]) / 2, bbox[1] + (bbox[3] - bbox[1]) / 2
     return [cx, cy]
 
+
 def crop(image, bbox):
     return image[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+
 
 def get_num_error(path_err):
     # Return num of error images in logs of eval function
@@ -24,11 +29,13 @@ def get_num_error(path_err):
         num_lines = sum(1 for line in f)
         return num_lines
 
+
 def draw_corner(img, t):
     # bbox = np.int32(np.array(t)[:, :4][np.where(np.array(t)[:, 4] > 0.6)]
     bbox = np.int32(np.array(t)[:, :4])
     for bb in bbox:
         draw(img, bb)
+
 
 def draw_labels_and_boxes(image, labels, boxes):
     x_min = round(boxes[0])
@@ -37,20 +44,21 @@ def draw_labels_and_boxes(image, labels, boxes):
     y_max = round(boxes[3])
 
     image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2)
-    image = cv2.putText(image, labels, (x_min - 40, y_min), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 255), thickness=2)
-
-    draw_bbox_character(image, bbox_character, x_min, y_min)
+    image = cv2.putText(image, labels, (x_min - 40, y_min), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 255),
+                        thickness=2)
 
     return image
 
+
 def remove_space(root):
     # 76C12345 (2).jpg --> 76C12345(2).jpg
-    path_image = [name for name in os.listdir(root) if name.endswith(('jpg', 'png', 'jpeg'))]
+    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
     for path in tqdm(path_image):
         new_name = ''.join(path.split())
         os.rename(os.path.join(root + path), os.path.join(root + new_name))
 
-#------------------------------------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------------------------------------
 
 def try_catch(line1, line2):
     index = len(line1)
@@ -87,16 +95,19 @@ def try_catch(line1, line2):
 
     return line[:index], line[index:]
 
-def draw_bbox_character(plate, bbox, _x, _y):
+
+def draw_bbox_character(plate, bbox):
     for bb in bbox:
         x1, y1, x2, y2 = bb
-        cv2.rectangle(plate, (_x + x1, _y + y1), (_x + x2, _y + y2), (0, 255, 0), 1)
+        cv2.rectangle(plate, (x1, y1), (x2, y2), (0, 255, 0), 1)
+
 
 def padding(thresh, h=28):
     char_bg = np.zeros((h, h))
     x = int((h - thresh.shape[1]) / 2)
     char_bg[0:h, x: x + thresh.shape[1]] = thresh
     return char_bg
+
 
 def binary_image(char):
     h, w = char.shape[:2]
@@ -106,8 +117,9 @@ def binary_image(char):
     _, thresh = cv2.threshold(char_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     thresh_inv = cv2.bitwise_not(thresh)
     thresh_inv = denoise(thresh_inv)
-    thresh_ori = cv2.resize(thresh_inv, (w,h))
+    thresh_ori = cv2.resize(thresh_inv, (w, h))
     return thresh_inv, thresh_ori
+
 
 def format(candidates, h_avg):
     first_line = []
@@ -142,6 +154,7 @@ def format(candidates, h_avg):
 
     return license_plate
 
+
 def denoise(char):
     # Remove noise in character binary via findContour --> calculate Area --> Compare with threshold area
     char = np.uint8(char)
@@ -150,9 +163,9 @@ def denoise(char):
 
     lst_coord_and_area = []
     for c in contours:
-        area =cv2.contourArea(c)
+        area = cv2.contourArea(c)
         x, y, w, h = cv2.boundingRect(c)
-        lst_coord_and_area.append((x, y , w, h, area))
+        lst_coord_and_area.append((x, y, w, h, area))
 
     if len(lst_coord_and_area) > 0:
         lst_coord_and_area.pop(np.argmax(np.array(lst_coord_and_area)[:, -1]))
@@ -163,6 +176,7 @@ def denoise(char):
         cv2.fillPoly(char, pts=[points], color=(0, 0, 0))
 
     return char
+
 
 def automatic_brightness_and_contrast(image, clip_hist_percent=1):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -195,8 +209,10 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=1):
     # Calculate alpha and beta values
     alpha = 255 / (maximum_gray - minimum_gray)
     beta = -minimum_gray * alpha
+
     auto_result = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
     return auto_result
+
 
 def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
     # A-B-C-D : counter-clockwise
@@ -220,15 +236,8 @@ def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
     img = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
     return img
 
-def expanded_bbox(bbox, h_expand=1, w_expand=1):
-    bbox[:, 0] = bbox[:, 0] - w_expand
-    bbox[:, 1] = bbox[:, 1] - h_expand
-    bbox[:, 2] = bbox[:, 2] + w_expand
-    bbox[:, 3] = bbox[:, 3] + h_expand
-    return bbox.tolist()
 
-# ------------------------------------------------------------------------------------------------------------
-def interpolate_end_point(A, B, C, D, coefficient_expand = 1):
+def interpolate_end_point(A, B, C, D, coefficient_expand=1):
     # Tính chất hình bình hành: vector cặp cạnh đối diện luôn bằng nhau
     if len(A) == 0:
         x = B[0][0] + D[0][0] - C[0][0]
@@ -252,6 +261,7 @@ def interpolate_end_point(A, B, C, D, coefficient_expand = 1):
 
     return A[0], B[0], C[0], D[0]
 
+
 def get_true_coord(A, B, C, D, bbox_plate):
     w, h = bbox_plate[2] - bbox_plate[0], bbox_plate[3] - bbox_plate[1]
 
@@ -271,6 +281,7 @@ def get_true_coord(A, B, C, D, bbox_plate):
 
     return interpolate_end_point(A, B, C, D)
 
+
 def ABCD(bbox, img, bbox_plate):
     h, w = img.shape[:2]
     A = []
@@ -285,6 +296,7 @@ def ABCD(bbox, img, bbox_plate):
             D.append(center) if center[1] < h / 2 else C.append(center)
 
     return get_true_coord(A, B, C, D, bbox_plate)
+
 
 def expand_bbox(bbox, img, scale=0.1):
     H, W = img.shape[:2]
