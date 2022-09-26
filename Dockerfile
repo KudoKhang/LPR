@@ -17,7 +17,7 @@ RUN pip install numpy --upgrade
 RUN apt-get update && apt-get install -y python3-opencv
 RUN pip install opencv-python
 
-EXPOSE 5000
+#EXPOSE 5000
 
 CMD ["tail", "-f", "/dev/null"]
 CMD ["python", "app.py"]
