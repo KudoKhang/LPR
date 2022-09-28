@@ -190,5 +190,5 @@ def process_image(image_path):
 
 if __name__ == '__main__':
     # process_folder('data/private_test/BAD/', 'output/private_test/BAD/')
-    process_image('data/dataset1.jpg')
+    process_image('88H0009.jpg')
     # eval('./data/private_test/GOOD/')
