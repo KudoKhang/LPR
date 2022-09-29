@@ -38,5 +38,5 @@ Image: 78C08513.jpg     ---Failed--- Ground Trust: 78C08513   -   Predict: 78CC6
 Image: 78C10416(2).jpg  ---Failed--- Ground Trust: 78C10416   -   Predict: 08C10416 
 Image: 82C00203.jpg     ---Failed--- Ground Trust: 82C00203   -   Predict: 82C0C403 
 ------------------------------------------------------------------------------------------ 
-Accuracy of private test --./data/private_test/GOOD/-- | 240 / 279 = 86.02 %
+Accuracy of private test --./data/private_test/GOOD/-- | 962 / 1000 = 96.2 %
 Total error image is: 0. See logs here 👉 ---tests/error_val.txt---
