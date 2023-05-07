@@ -3,7 +3,8 @@ import subprocess
 
 import gdown
 from codetiming import Timer
-from FAURD.utils.logger import Logger
+
+from LPR.utils.logger import Logger
 
 logger = Logger().logger
 
