@@ -22,8 +22,8 @@ from skimage.filters import threshold_local
 from torchvision import transforms
 from tqdm import tqdm
 
-from src.char_classification.model import CNN_Model
-from utilss.functions import *
+from LPR.src.char_classification.model import CNN_Model
+from LPR.utilss.functions import *
 
 warnings.filterwarnings("ignore")
 
@@ -33,4 +33,3 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # 2 = INFO and WARNING messages are not printed
 # 3 = INFO, WARNING, and ERROR messages are not printed
 np.warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
-import math

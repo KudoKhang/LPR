@@ -1,0 +1,26 @@
+[project]
+name = "Boommail"
+authors = [
+    {name = "Ho Nghia Khang", email = "hnkhang.dev@gmail.com"},
+]
+readme = "README.md"
+
+[tool.black]
+line-length = 127
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"

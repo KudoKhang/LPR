@@ -74,9 +74,7 @@ def draw_labels_and_boxes(image, labels, boxes):
     x_max = round(boxes[2])
     y_max = round(boxes[3])
 
-    image = cv2.rectangle(
-        image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2
-    )
+    image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2)
     image = cv2.putText(
         image,
         labels,
@@ -195,9 +193,7 @@ def format(candidates, h_avg):
     if len(second_line) == 0:
         license_plate = "".join([str(ele[0]) for ele in first_line])
     else:
-        license_plate = "".join([str(ele[0]) for ele in first_line]) + "".join(
-            [str(ele[0]) for ele in second_line]
-        )
+        license_plate = "".join([str(ele[0]) for ele in first_line]) + "".join([str(ele[0]) for ele in second_line])
 
     return license_plate
 
@@ -206,9 +202,7 @@ def denoise(char):
     # Remove noise in character binary via findContour --> calculate Area --> Compare with threshold area
     char = np.uint8(char)
     _, mask = cv2.threshold(char, 15, 255, cv2.THRESH_BINARY)
-    contours, hierarchy = cv2.findContours(
-        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     lst_coord_and_area = []
     for c in contours:
@@ -276,9 +270,7 @@ def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
     maxHeight = max(int(height_AB), int(height_CD))
 
     input_pts = np.float32([pt_A, pt_B, pt_C, pt_D])
-    output_pts = np.float32(
-        [[0, 0], [0, maxHeight - 1], [maxWidth - 1, maxHeight - 1], [maxWidth - 1, 0]]
-    )
+    output_pts = np.float32([[0, 0], [0, maxHeight - 1], [maxWidth - 1, maxHeight - 1], [maxWidth - 1, 0]])
 
     M = cv2.getPerspectiveTransform(input_pts, output_pts)
     img = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)

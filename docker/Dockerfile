@@ -8,7 +8,7 @@ WORKDIR LPR
 RUN apt-get update
 
 #COPY requirements.txt WORKDIR/requirements.txt
-COPY . .
+COPY .. .
 
 RUN python -m pip install --upgrade pip
 RUN pip install pip==21.3.1
