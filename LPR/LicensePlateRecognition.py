@@ -1,7 +1,10 @@
+import sys
+
 import cv2
 import numpy as np
 import torch
 
+sys.path.insert(0, ".")
 from LPR.functions import *
 from LPR.models.classifier import ALPHA_DICT, CNN_Model
 from LPR.utils.config import cfg
@@ -12,10 +15,10 @@ cfg = cfg(config_name="config")
 class LicensePlateRecognition:
     def __init__(
         self,
-        weight_plate=cfg.plate.checkpoint,
-        weight_character=cfg.character.checkpoint,
-        weight_classify=cfg.classify.checkpoint,
-        weight_corner=cfg.corner.checkpoint,
+        weight_plate=cfg.plate.path_local,
+        weight_character=cfg.character.path_local,
+        weight_classify=cfg.classify.path_local,
+        weight_corner=cfg.corner.path_local,
     ):
         self.model_detect = torch.hub.load("ultralytics/yolov5", "custom", path=weight_plate, verbose=False)
         self.model_detect_character = torch.hub.load("ultralytics/yolov5", "custom", path=weight_character, verbose=False)

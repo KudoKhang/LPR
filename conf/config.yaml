@@ -1,13 +1,19 @@
+device: cpu
+
 image_test: data/30G42717.jpg
 
 plate:
-  checkpoint: checkpoints/plate_yolo10k.pt
+  file_id: 1Ori6dd-738s8iQPHwFJc_935SSzPNjYU
+  path_local: checkpoints/plate_yolo10k.pt
 
 character:
-  checkpoint: checkpoints/character_yolo_087.pt
+  file_id: 1_fZjRNzwau_HWcW9L83loGaOSAblOdcV
+  path_local: checkpoints/character_yolo_087.pt
 
 classify:
-  checkpoint: checkpoints/classify_character.h5
+  file_id: 1nqv9R4YnpCgsjeEXcq4t9fVBZcW4n-Ea
+  path_local: checkpoints/classify_character.h5
 
 corner:
-  checkpoint: checkpoints/detect_corner_v2.pt
+  file_id: 1jwLlByXGnsFuccpKLHk9IPPsYnBUeqJI
+  path_local: checkpoints/detect_corner_v2.pt
