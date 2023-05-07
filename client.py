@@ -6,12 +6,12 @@ import requests
 # print(r.text)
 
 
-url = 'http://127.0.0.1:8000/predict'
-myfiles = {'file': open('88H0009.jpg' ,'rb')}
+url = "http://127.0.0.1:8000/predict"
+myfiles = {"file": open("88H0009.jpg", "rb")}
 r = requests.post(url, files=myfiles)
 
 # write raw bytes to file
-with open("test.png", 'wb') as f:
+with open("test.png", "wb") as f:
     f.write(r.content)
 
 # or, convert back to PIL Image

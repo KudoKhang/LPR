@@ -1,12 +1,42 @@
+import math
 import os.path
 
 from .libs import *
-import math
 
-ALPHA_DICT = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'K', 9: 'L', 10: 'M', 11: 'N', 12: 'P',
-              13: 'R', 14: 'S', 15: 'T', 16: 'U', 17: 'V', 18: 'X', 19: 'Y', 20: 'Z', 21: '0', 22: '1', 23: '2',
-              24: '3',
-              25: '4', 26: '5', 27: '6', 28: '7', 29: '8', 30: '9', 31: "Background"}
+ALPHA_DICT = {
+    0: "A",
+    1: "B",
+    2: "C",
+    3: "D",
+    4: "E",
+    5: "F",
+    6: "G",
+    7: "H",
+    8: "K",
+    9: "L",
+    10: "M",
+    11: "N",
+    12: "P",
+    13: "R",
+    14: "S",
+    15: "T",
+    16: "U",
+    17: "V",
+    18: "X",
+    19: "Y",
+    20: "Z",
+    21: "0",
+    22: "1",
+    23: "2",
+    24: "3",
+    25: "4",
+    26: "5",
+    27: "6",
+    28: "7",
+    29: "8",
+    30: "9",
+    31: "Background",
+}
 
 
 def draw(img, bbox):
@@ -19,14 +49,14 @@ def get_center(bbox):
 
 
 def crop(image, bbox):
-    return image[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+    return image[bbox[1] : bbox[3], bbox[0] : bbox[2]]
 
 
 def get_num_error(path_err):
     # Return num of error images in logs of eval function
     if not os.path.exists(path_err):
         return 0
-    with open(path_err, 'r') as f:
+    with open(path_err, "r") as f:
         num_lines = sum(1 for line in f)
         return num_lines
 
@@ -44,40 +74,54 @@ def draw_labels_and_boxes(image, labels, boxes):
     x_max = round(boxes[2])
     y_max = round(boxes[3])
 
-    image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2)
-    image = cv2.putText(image, labels, (x_min - 40, y_min), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 255),
-                        thickness=2)
+    image = cv2.rectangle(
+        image, (x_min, y_min), (x_max, y_max), (255, 0, 255), thickness=2
+    )
+    image = cv2.putText(
+        image,
+        labels,
+        (x_min - 40, y_min),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        fontScale=1,
+        color=(0, 0, 255),
+        thickness=2,
+    )
 
     return image
 
 
 def remove_space(root):
     # 76C12345 (2).jpg --> 76C12345(2).jpg
-    path_image = [name for name in os.listdir(root) if name.endswith('jpg')]
+    path_image = [name for name in os.listdir(root) if name.endswith("jpg")]
     for path in tqdm(path_image):
-        new_name = ''.join(path.split())
+        new_name = "".join(path.split())
         os.rename(os.path.join(root + path), os.path.join(root + new_name))
 
 
 # ------------------------------------------------------------------------------------------------------------
 
+
 def try_catch(line1, line2):
     index = len(line1)
-    dict_try_catch_line1 = {'0': 'C',
-                            '6': 'C',
-                            'L': 'C',
-                            '2': 'C',
-                            'Z': 'C',
-                            'F': 'C',
-                            '8': 'C'}
+    dict_try_catch_line1 = {
+        "0": "C",
+        "6": "C",
+        "L": "C",
+        "2": "C",
+        "Z": "C",
+        "F": "C",
+        "8": "C",
+    }
 
-    dict_try_catch_line2 = {'D': '0',
-                            'C': '0',
-                            'B': '8',
-                            'E': '8',
-                            'A': '8',
-                            'H': '8',
-                            'K': '4'}
+    dict_try_catch_line2 = {
+        "D": "0",
+        "C": "0",
+        "B": "8",
+        "E": "8",
+        "A": "8",
+        "H": "8",
+        "K": "4",
+    }
     line = line1 + line2
 
     for i in range(len(line)):
@@ -106,7 +150,7 @@ def draw_bbox_character(plate, bbox):
 def padding(thresh, h=28):
     char_bg = np.zeros((h, h))
     x = int((h - thresh.shape[1]) / 2)
-    char_bg[0:h, x: x + thresh.shape[1]] = thresh
+    char_bg[0:h, x : x + thresh.shape[1]] = thresh
     return char_bg
 
 
@@ -151,7 +195,9 @@ def format(candidates, h_avg):
     if len(second_line) == 0:
         license_plate = "".join([str(ele[0]) for ele in first_line])
     else:
-        license_plate = "".join([str(ele[0]) for ele in first_line]) + "".join([str(ele[0]) for ele in second_line])
+        license_plate = "".join([str(ele[0]) for ele in first_line]) + "".join(
+            [str(ele[0]) for ele in second_line]
+        )
 
     return license_plate
 
@@ -160,7 +206,9 @@ def denoise(char):
     # Remove noise in character binary via findContour --> calculate Area --> Compare with threshold area
     char = np.uint8(char)
     _, mask = cv2.threshold(char, 15, 255, cv2.THRESH_BINARY)
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(
+        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
 
     lst_coord_and_area = []
     for c in contours:
@@ -194,7 +242,7 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=1):
 
     # Locate points to clip
     maximum = accumulator[-1]
-    clip_hist_percent *= (maximum / 100.0)
+    clip_hist_percent *= maximum / 100.0
     clip_hist_percent /= 2.0
 
     # Locate left cut
@@ -228,10 +276,9 @@ def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
     maxHeight = max(int(height_AB), int(height_CD))
 
     input_pts = np.float32([pt_A, pt_B, pt_C, pt_D])
-    output_pts = np.float32([[0, 0],
-                             [0, maxHeight - 1],
-                             [maxWidth - 1, maxHeight - 1],
-                             [maxWidth - 1, 0]])
+    output_pts = np.float32(
+        [[0, 0], [0, maxHeight - 1], [maxWidth - 1, maxHeight - 1], [maxWidth - 1, 0]]
+    )
 
     M = cv2.getPerspectiveTransform(input_pts, output_pts)
     img = cv2.warpPerspective(img, M, (maxWidth, maxHeight), flags=cv2.INTER_LINEAR)
@@ -266,10 +313,7 @@ def interpolate_end_point(A, B, C, D, coefficient_expand=1):
 def get_true_coord(A, B, C, D, bbox_plate):
     w, h = bbox_plate[2] - bbox_plate[0], bbox_plate[3] - bbox_plate[1]
 
-    _dict = {'A': (A, (0, 0)),
-             'B': (B, (0, h)),
-             'C': (C, (w, h)),
-             'D': (D, (w, 0))}
+    _dict = {"A": (A, (0, 0)), "B": (B, (0, h)), "C": (C, (w, h)), "D": (D, (w, 0))}
 
     for key in _dict.keys():
         if len(_dict[key][0]) > 1:
@@ -278,7 +322,7 @@ def get_true_coord(A, B, C, D, bbox_plate):
                 dist = math.dist(center, _dict[key][1])
                 temp.append((dist, center))
             temp = np.array(temp)
-            _dict[key] = (temp[:, 1][np.where(np.argmax(temp[:, 0]))], '000')
+            _dict[key] = (temp[:, 1][np.where(np.argmax(temp[:, 0]))], "000")
 
     return interpolate_end_point(A, B, C, D)
 
@@ -310,4 +354,6 @@ def expand_bbox(bbox, img, scale=0.1):
     y2_exp = H if (y2 - h_expand) > H else (y2 + h_expand)
 
     return (x1_exp, y1_exp, x2_exp, y2_exp)
+
+
 # ------------------------------------------------------------------------------------------------------------

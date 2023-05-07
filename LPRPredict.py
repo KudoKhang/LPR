@@ -1,14 +1,24 @@
 from utilss import *
 
+
 class LicensePlateRecognition:
-    def __init__(self, weight_plate='src/weights/plate_yolo10k.pt', weight_character='src/weights/character_yolo_087.pt', weight_classify='src/weights/classify_character.h5'):
-        self.model_detect = torch.hub.load('ultralytics/yolov5', 'custom', path=weight_plate,
-                                      verbose=False)
-        self.model_detect_character = torch.hub.load('ultralytics/yolov5', 'custom',
-                                                path=weight_character, verbose=False)
+    def __init__(
+        self,
+        weight_plate="src/weights/plate_yolo10k.pt",
+        weight_character="src/weights/character_yolo_087.pt",
+        weight_classify="src/weights/classify_character.h5",
+    ):
+        self.model_detect = torch.hub.load(
+            "ultralytics/yolov5", "custom", path=weight_plate, verbose=False
+        )
+        self.model_detect_character = torch.hub.load(
+            "ultralytics/yolov5", "custom", path=weight_character, verbose=False
+        )
         self.model_recognize_character = CNN_Model(trainable=False).model
         self.model_recognize_character.load_weights(weight_classify)
-        self.model_detect_corner = torch.hub.load('ultralytics/yolov5', 'custom', path='src/weights/detect_corner_v2.pt')
+        self.model_detect_corner = torch.hub.load(
+            "ultralytics/yolov5", "custom", path="src/weights/detect_corner_v2.pt"
+        )
 
     def detect_corner_and_transform(self, img, bbox_plate, is_draw=True):
         results = self.model_detect_corner(img)
@@ -40,7 +50,9 @@ class LicensePlateRecognition:
         t = results.pandas().xyxy[0]
         if len(t) > 0:
             # TODO: check area and confident
-            bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])])  # Max confident
+            bbox = np.int32(
+                np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])]
+            )  # Max confident
             bbox_exp = expand_bbox(bbox, img)
             plate = crop(img, bbox_exp)
             return plate, bbox
@@ -78,8 +90,10 @@ class LicensePlateRecognition:
                     y, x = c_b[1]
                     binary = c_b[0]
                     h, w = binary.shape[:2]
-                    bg[y:y + h, x:x + w] = binary
-                cv2.imshow('Binary', cv2.resize(bg, tuple([a * 3 for a in bg.shape[::-1]])))
+                    bg[y : y + h, x : x + w] = binary
+                cv2.imshow(
+                    "Binary", cv2.resize(bg, tuple([a * 3 for a in bg.shape[::-1]]))
+                )
 
             return condidates, sum(height_char) / len(height_char)
 

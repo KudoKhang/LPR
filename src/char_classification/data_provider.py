@@ -1,5 +1,5 @@
-import tensorflow.keras as keras
 import numpy as np
+import tensorflow.keras as keras
 
 from src import data_utils
 

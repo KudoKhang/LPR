@@ -1,18 +1,19 @@
-from LPRPredict import *
-import uvicorn
-from fastapi import FastAPI, File, UploadFile
-from starlette.responses import RedirectResponse
-from io import BytesIO
 import io
+from io import BytesIO
+
+import uvicorn
+from fastapi import FastAPI, File, Response, UploadFile
 from PIL import Image
-from starlette.responses import StreamingResponse
-from fastapi import Response
-from starlette.responses import StreamingResponse
+from starlette.responses import RedirectResponse, StreamingResponse
+
+from LPRPredict import *
+
 
 def read_image_file(file) -> Image.Image:
     image = Image.open(BytesIO(file))
-    image = np.array(image)[:,:,::-1]
+    image = np.array(image)[:, :, ::-1]
     return image
+
 
 LPRPredictor = LicensePlateRecognition()
 
@@ -20,9 +21,11 @@ app_desc = """<h2>Try this app by uploading any image with `predict`</h2>"""
 
 app = FastAPI(title="Lisence Plate Recognition", description=app_desc)
 
+
 @app.get("/", include_in_schema=False)
 async def index():
     return RedirectResponse(url="/docs")
+
 
 @app.post("/predict/")
 async def predict_api(file: UploadFile = File(...)):
@@ -32,6 +35,7 @@ async def predict_api(file: UploadFile = File(...)):
     image = read_image_file(await file.read())
     prediction = LPRPredictor.predict(image)
     return prediction
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
