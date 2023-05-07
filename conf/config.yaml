@@ -1,0 +1,13 @@
+image_test: data/30G42717.jpg
+
+plate:
+  checkpoint: checkpoints/plate_yolo10k.pt
+
+character:
+  checkpoint: checkpoints/character_yolo_087.pt
+
+classify:
+  checkpoint: checkpoints/classify_character.h5
+
+corner:
+  checkpoint: checkpoints/detect_corner_v2.pt

@@ -1,0 +1,36 @@
+[project]
+name = "Boommail"
+authors = [
+    {name = "Ho Nghia Khang", email = "hnkhang.dev@gmail.com"},
+]
+readme = "README.md"
+
+[tool.black]
+line-length = 127
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+# Ignore warnings when testing
+addopts = "-p no:warnings" # ignore PendingDeprecationWarning
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    # note the use of single quote below to denote "raw" strings in TOML
+    'ignore:function ham\(\) is deprecated:DeprecationWarning',
+]
