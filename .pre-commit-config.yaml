@@ -25,3 +25,13 @@ repos:
     hooks:
     -   id: isort
         args: ["--profile=black"]
+-   repo: local
+    hooks:
+    -   id: pytest-check
+        name: pytest-check
+        stages: [push]
+        types: [python]
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true

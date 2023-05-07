@@ -141,9 +141,7 @@ cython_debug/
 .idea
 *.DS_Store
 
-tests/
-LPR/src/
 data/
 output/
 visualize.jpg
-yolov5/
+checkpoints/

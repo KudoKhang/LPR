@@ -3,10 +3,9 @@ from io import BytesIO
 
 import uvicorn
 from fastapi import FastAPI, File, Response, UploadFile
+from LicensePlateRecognition import *
 from PIL import Image
 from starlette.responses import RedirectResponse, StreamingResponse
-
-from LPRPredict import *
 
 
 def read_image_file(file) -> Image.Image:

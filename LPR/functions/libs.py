@@ -22,8 +22,8 @@ from skimage.filters import threshold_local
 from torchvision import transforms
 from tqdm import tqdm
 
-from LPR.src.char_classification.model import CNN_Model
-from LPR.utilss.functions import *
+# from LPR.src.character_classification.model import CNN_Model
+from LPR.functions.functions import *
 
 warnings.filterwarnings("ignore")
 

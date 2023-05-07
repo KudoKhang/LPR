@@ -24,3 +24,13 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
+
+[tool.pytest.ini_options]
+# Ignore warnings when testing
+addopts = "-p no:warnings" # ignore PendingDeprecationWarning
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    # note the use of single quote below to denote "raw" strings in TOML
+    'ignore:function ham\(\) is deprecated:DeprecationWarning',
+]

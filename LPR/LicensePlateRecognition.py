@@ -1,18 +1,27 @@
-from LPR.utilss import *
+import cv2
+import numpy as np
+import torch
+
+from LPR.functions import *
+from LPR.models.classifier import ALPHA_DICT, CNN_Model
+from LPR.utils.config import cfg
+
+cfg = cfg(config_name="config")
 
 
 class LicensePlateRecognition:
     def __init__(
         self,
-        weight_plate="LPR/src/weights/plate_yolo10k.pt",
-        weight_character="LPR/src/weights/character_yolo_087.pt",
-        weight_classify="LPR/src/weights/classify_character.h5",
+        weight_plate=cfg.plate.checkpoint,
+        weight_character=cfg.character.checkpoint,
+        weight_classify=cfg.classify.checkpoint,
+        weight_corner=cfg.corner.checkpoint,
     ):
         self.model_detect = torch.hub.load("ultralytics/yolov5", "custom", path=weight_plate, verbose=False)
         self.model_detect_character = torch.hub.load("ultralytics/yolov5", "custom", path=weight_character, verbose=False)
         self.model_recognize_character = CNN_Model(trainable=False).model
         self.model_recognize_character.load_weights(weight_classify)
-        self.model_detect_corner = torch.hub.load("ultralytics/yolov5", "custom", path="LPR/src/weights/detect_corner_v2.pt")
+        self.model_detect_corner = torch.hub.load("ultralytics/yolov5", "custom", path=weight_corner)
 
     def detect_corner_and_transform(self, img, bbox_plate, is_draw=True):
         results = self.model_detect_corner(img)
