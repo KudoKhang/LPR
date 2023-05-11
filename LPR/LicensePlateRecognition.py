@@ -6,7 +6,7 @@ import torch
 
 sys.path.insert(0, ".")
 from LPR.functions import *
-from LPR.models.classifier import ALPHA_DICT, CNN_Model
+from LPR.models.classifier import CNN_Model_Pytorch
 from LPR.utils.config import cfg
 
 cfg = cfg(config_name="config")
@@ -22,8 +22,10 @@ class LicensePlateRecognition:
     ):
         self.model_detect = torch.hub.load("ultralytics/yolov5", "custom", path=weight_plate, verbose=False)
         self.model_detect_character = torch.hub.load("ultralytics/yolov5", "custom", path=weight_character, verbose=False)
-        self.model_recognize_character = CNN_Model(trainable=False).model
-        self.model_recognize_character.load_weights(weight_classify)
+        self.model_recognize_character = CNN_Model_Pytorch()
+
+        self.model_recognize_character.load_state_dict(torch.load(weight_classify))
+
         self.model_detect_corner = torch.hub.load("ultralytics/yolov5", "custom", path=weight_corner)
 
     def detect_corner_and_transform(self, img, bbox_plate, is_draw=True):
@@ -110,7 +112,11 @@ class LicensePlateRecognition:
             coordinates.append(coordinate)
 
         characters = np.array(characters)
-        result = self.model_recognize_character.predict_on_batch(characters)
+        characters = np.expand_dims(characters, 0)
+        characters = torch.from_numpy(characters.transpose(1, 0, 2, 3)).float()
+
+        result = self.model_recognize_character.forward(characters)
+        result = result.detach().numpy()
         result_idx = np.argmax(result, axis=1)
 
         candidates = []
@@ -141,3 +147,9 @@ class LicensePlateRecognition:
             return license_plate, str(bbox)
         except:
             return 0, 0
+
+
+if __name__ == "__main__":
+    lpr_predictor = LicensePlateRecognition()
+    image = cv2.imread("data/30G42717.jpg")
+    output = lpr_predictor.predict(image)
