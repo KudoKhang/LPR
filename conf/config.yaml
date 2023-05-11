@@ -10,9 +10,14 @@ character:
   file_id: 1_fZjRNzwau_HWcW9L83loGaOSAblOdcV
   path_local: checkpoints/character_yolo_087.pt
 
-classify:
+classify_tf:
   file_id: 1nqv9R4YnpCgsjeEXcq4t9fVBZcW4n-Ea
   path_local: checkpoints/classify_character.h5
+
+
+classify: # Torch
+  file_id: 1aEPtbVd6BEoXR0ScLc9UJW08QkKYCsQI
+  path_local: checkpoints/classify_character.pt
 
 corner:
   file_id: 1jwLlByXGnsFuccpKLHk9IPPsYnBUeqJI

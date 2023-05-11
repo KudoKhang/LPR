@@ -20,5 +20,5 @@ def download_checkpoints(list_checkpoints):
 
 
 if __name__ == "__main__":
-    list_checkpoints = [cfg.plate, cfg.character, cfg.classify, cfg.corner]
+    list_checkpoints = [cfg.plate, cfg.character, cfg.classify, cfg.corner, cfg.classify_tf]
     download_checkpoints(list_checkpoints)
