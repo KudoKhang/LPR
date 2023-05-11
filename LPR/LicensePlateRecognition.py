@@ -6,8 +6,7 @@ import torch
 
 sys.path.insert(0, ".")
 from LPR.functions import *
-from LPR.models.classifier import ALPHA_DICT
-from LPR.training.character_classification.tf2torch import CNN_Model_Pytorch
+from LPR.models.classifier import CNN_Model_Pytorch
 from LPR.utils.config import cfg
 
 cfg = cfg(config_name="config")
