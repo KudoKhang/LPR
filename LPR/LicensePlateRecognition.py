@@ -25,7 +25,7 @@ class LicensePlateRecognition:
         self.model_detect_character = torch.hub.load("ultralytics/yolov5", "custom", path=weight_character, verbose=False)
         self.model_recognize_character = CNN_Model_Pytorch()
 
-        self.model_recognize_character.load_state_dict(torch.load(weight_character))
+        self.model_recognize_character.load_state_dict(torch.load(weight_classify))
 
         self.model_detect_corner = torch.hub.load("ultralytics/yolov5", "custom", path=weight_corner)
 
