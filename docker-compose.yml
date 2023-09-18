@@ -1,0 +1,11 @@
+version: "3"
+services:
+  lpr_app:
+    image: hnkhang/lpr:app
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/LPR
