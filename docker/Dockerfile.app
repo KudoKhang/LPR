@@ -19,6 +19,6 @@ RUN apt-get update && apt-get install -y python3-opencv
 RUN pip install opencv-python
 
 EXPOSE 8000
+ENV PYTHONPATH="${PYTHONPATH}:$(pwd)"
 
-CMD ["tail", "-f", "/dev/null"]
-CMD ["python", "app.py"]
+ENTRYPOINT ["python3", "LPR/app.py"]

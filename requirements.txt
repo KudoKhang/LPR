@@ -16,3 +16,6 @@ seaborn
 uvicorn
 fastapi
 python-multipart
+hydra-core
+gdown
+codetiming

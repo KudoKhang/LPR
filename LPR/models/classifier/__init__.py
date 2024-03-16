@@ -1,1 +1,1 @@
-from .model import ALPHA_DICT, CNN_Model
+from .model import CNN_Model_Pytorch
