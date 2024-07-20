@@ -1,10 +1,6 @@
-import sys
-
-sys.path.insert(0, ".")
-
 import logging
 
-from LPR.utils.logger import Logger
+from lpr.utils.logger import Logger
 
 logger = Logger(level=logging.DEBUG, path_file="test.log").logger
 

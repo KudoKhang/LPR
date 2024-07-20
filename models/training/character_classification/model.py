@@ -4,8 +4,8 @@ from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from tensorflow.keras.models import Sequential
 
-from LPR.training.character_classification import config
-from LPR.training.character_classification.data_provider import Datasets
+from lpr.training.character_classification import config
+from lpr.training.character_classification.data_provider import Datasets
 
 ALPHA_DICT = {
     0: "A",

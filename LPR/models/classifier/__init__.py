@@ -1,1 +1,3 @@
-from .model import CNN_Model_Pytorch
+from .model import CNNModelPytorch
+
+__all__ = ["CNNModelPytorch"]

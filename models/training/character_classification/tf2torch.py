@@ -1,15 +1,10 @@
-import sys
-
-sys.path.insert(0, ".")
-
-
 import cv2
 import numpy as np
 import torch
 import torch.nn as nn
 from keras.models import load_model
 
-from LPR.models.classifier import ALPHA_DICT
+from lpr.models.classifier import ALPHA_DICT
 
 # Load the Keras model
 keras_model = load_model("checkpoints/classify_character.h5")
@@ -18,9 +13,9 @@ keras_model = load_model("checkpoints/classify_character.h5")
 keras_weights = keras_model.get_weights()
 
 
-class CNN_Model_Pytorch(nn.Module):
+class CNNModelPytorch(nn.Module):
     def __init__(self):
-        super(CNN_Model_Pytorch, self).__init__()
+        super(CNNModelPytorch, self).__init__()
 
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(32, 32, kernel_size=3)
@@ -73,7 +68,7 @@ class CNN_Model_Pytorch(nn.Module):
         return x
 
 
-torch_model = CNN_Model_Pytorch()
+torch_model = CNNModelPytorch()
 
 
 def convert_checkpoint():

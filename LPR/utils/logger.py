@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Optional
 
-from LPR.utils import COLOR
+from lpr.utils import COLOR
 
 
 class CustomFormatter(logging.Formatter):
@@ -84,3 +84,6 @@ class Logger:
             self.logger.addHandler(path_file_handler)
 
         self.logger.propagate = False
+
+
+logger = Logger().logger

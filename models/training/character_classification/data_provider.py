@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow.keras as keras
 
-from LPR.training.character_classification import data_utils
+from lpr.training.character_classification import data_utils
 
 
 class Datasets(object):

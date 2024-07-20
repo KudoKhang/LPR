@@ -1,15 +1,13 @@
-import sys
+import traceback
 
 import cv2
 import numpy as np
 import torch
 
-sys.path.insert(0, ".")
-from LPR.functions import *
-from LPR.models.classifier import CNN_Model_Pytorch
-from LPR.utils.config import cfg
-
-cfg = cfg(config_name="config")
+from lpr.functions import core
+from lpr.models.classifier import CNNModelPytorch
+from lpr.utils.config import cfg
+from lpr.utils.logger import logger
 
 
 class LicensePlateRecognition:
@@ -22,11 +20,9 @@ class LicensePlateRecognition:
     ):
         self.model_detect = torch.hub.load("ultralytics/yolov5", "custom", path=weight_plate, verbose=False)
         self.model_detect_character = torch.hub.load("ultralytics/yolov5", "custom", path=weight_character, verbose=False)
-        self.model_recognize_character = CNN_Model_Pytorch()
-
+        self.model_recognize_character = CNNModelPytorch()
         self.model_recognize_character.load_state_dict(torch.load(weight_classify))
-
-        self.model_detect_corner = torch.hub.load("ultralytics/yolov5", "custom", path=weight_corner)
+        self.model_detect_corner = torch.hub.load("ultralytics/yolov5", "custom", path=weight_corner, verbose=False)
 
     def detect_corner_and_transform(self, img, bbox_plate, is_draw=True):
         results = self.model_detect_corner(img)
@@ -34,10 +30,10 @@ class LicensePlateRecognition:
         bbox = np.int32(np.array(t)[:, :4])
 
         if is_draw:
-            draw_corner(img, t)
+            core.draw_corner(img, t)
 
         try:
-            pt_A, pt_B, pt_C, pt_D = ABCD(bbox, img, bbox_plate)
+            pt_A, pt_B, pt_C, pt_D = core.ABCD(bbox, img, bbox_plate)
             try:
                 exp = 4
                 pt_A = [pt_A[0] - exp, pt_A[1] - exp]
@@ -46,7 +42,7 @@ class LicensePlateRecognition:
                 pt_D = [pt_D[0] + exp, pt_D[1] - exp]
             except:
                 pt_A, pt_B, pt_C, pt_D = pt_A, pt_B, pt_C, pt_D
-            img = transform_plate(img, pt_A, pt_B, pt_C, pt_D)
+            img = core.transform_plate(img, pt_A, pt_B, pt_C, pt_D)
         except:
             # TODO: return original plate
             return img
@@ -59,8 +55,8 @@ class LicensePlateRecognition:
         if len(t) > 0:
             # TODO: check area and confident
             bbox = np.int32(np.array(t)[:, :4][np.argmax(np.array(t)[:, 4])])  # Max confident
-            bbox_exp = expand_bbox(bbox, img)
-            plate = crop(img, bbox_exp)
+            bbox_exp = core.expand_bbox(bbox, img)
+            plate = core.crop(img, bbox_exp)
             return plate, bbox
         else:
             return None, None
@@ -84,9 +80,9 @@ class LicensePlateRecognition:
                 height_char.append(y2 - y1)
                 char = plate.copy()[y1:y2, x1:x2]
 
-                thresh, thresh_ori = binary_image(char)
+                thresh, thresh_ori = core.binary_image(char)
 
-                character = padding(thresh)
+                character = core.padding(thresh)
                 condidates.append((character, (y1, x1)))
                 condidates_for_visualize.append((thresh_ori, (y1, x1)))
 
@@ -124,7 +120,7 @@ class LicensePlateRecognition:
             if result_idx[i] == 31:  # if is background or noise, ignore it
                 char_err = characters[i]
                 continue
-            candidates.append((ALPHA_DICT[result_idx[i]], coordinates[i]))
+            candidates.append((core.ALPHA_DICT[result_idx[i]], coordinates[i]))
 
         return candidates
 
@@ -133,19 +129,20 @@ class LicensePlateRecognition:
 
         plate = self.detect_corner_and_transform(plate, bbox, is_draw=False)
 
-        plate = automatic_brightness_and_contrast(plate)
+        plate = core.automatic_brightness_and_contrast(plate)
 
         candidates_binary, h_avg = self.detect_char(plate, show_binary=False)
         candidates_predict = self.recognize_char(candidates_binary)
-        license_plate = format(candidates_predict, h_avg)
-        return image, license_plate, bbox
+        license_plate = core.format(candidates_predict, h_avg)
+        return license_plate, bbox
 
     def predict(self, image_path):
         # https://stackoverflow.com/questions/55873174/how-do-i-return-an-image-in-fastapi
         try:
-            img, license_plate, bbox = self.E2E(image_path)
+            license_plate, bbox = self.E2E(image_path)
             return license_plate, str(bbox)
-        except:
+        except Exception:
+            logger.critical(traceback.format_exc())
             return 0, 0
 
 

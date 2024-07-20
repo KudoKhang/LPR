@@ -1,11 +1,12 @@
-import io
 from io import BytesIO
 
+import numpy as np
 import uvicorn
-from fastapi import FastAPI, File, Response, UploadFile
-from LicensePlateRecognition import *
+from fastapi import FastAPI, File, UploadFile
 from PIL import Image
-from starlette.responses import RedirectResponse, StreamingResponse
+from starlette.responses import RedirectResponse
+
+from lpr.main import LicensePlateRecognition
 
 
 def read_image_file(file) -> Image.Image:

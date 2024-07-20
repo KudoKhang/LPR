@@ -1,14 +1,10 @@
 import math
 import os
-import os.path
-import warnings
 
 import cv2
 import imutils
 import numpy as np
 from tqdm import tqdm
-
-warnings.filterwarnings("ignore")
 
 ALPHA_DICT = {
     0: "A",
@@ -266,8 +262,6 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=1):
 
 def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
     # A-B-C-D : counter-clockwise
-    w, h = img.shape[:2]
-
     width_AD = np.sqrt(((pt_A[0] - pt_D[0]) ** 2) + ((pt_A[1] - pt_D[1]) ** 2))
     width_BC = np.sqrt(((pt_B[0] - pt_C[0]) ** 2) + ((pt_B[1] - pt_C[1]) ** 2))
     maxWidth = max(int(width_AD), int(width_BC))
@@ -284,8 +278,7 @@ def transform_plate(img, pt_A, pt_B, pt_C, pt_D):
     return img
 
 
-def interpolate_end_point(A, B, C, D, coefficient_expand=1):
-    # Tính chất hình bình hành: vector cặp cạnh đối diện luôn bằng nhau
+def interpolate_end_point(A, B, C, D):
     if len(A) == 0:
         x = B[0][0] + D[0][0] - C[0][0]
         y = B[0][1] + D[0][1] - C[0][1]

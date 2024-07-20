@@ -4,7 +4,7 @@ import subprocess
 import gdown
 from codetiming import Timer
 
-from LPR.utils.logger import Logger
+from lpr.utils.logger import Logger
 
 logger = Logger().logger
 

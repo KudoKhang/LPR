@@ -1,10 +1,7 @@
-import sys
+import cv2
 
-sys.path.insert(0, ".")
-from LPR.LicensePlateRecognition import *
-from LPR.utils.config import cfg
-
-cfg = cfg(config_name="config")
+from lpr.main import LicensePlateRecognition
+from lpr.utils.config import cfg
 
 lpr_predictor = LicensePlateRecognition()
 

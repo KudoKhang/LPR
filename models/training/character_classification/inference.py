@@ -1,13 +1,8 @@
-import sys
-
 import cv2
 import numpy as np
-import torch
 
-sys.path.insert(0, ".")
-from LPR.functions import *
-from LPR.models.classifier import ALPHA_DICT, CNN_Model
-from LPR.utils.config import cfg
+from lpr.models.classifier import ALPHA_DICT, CNN_Model
+from lpr.utils.config import cfg
 
 cfg = cfg(config_name="config")
 

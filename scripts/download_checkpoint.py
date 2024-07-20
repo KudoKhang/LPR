@@ -1,14 +1,8 @@
-import sys
-
-sys.path.insert(0, ".")
 import os
 
-from LPR.utils.config import cfg
-from LPR.utils.downloader import download_from_GDrive
-from LPR.utils.logger import Logger
-
-cfg = cfg()
-logger = Logger().logger
+from lpr.utils.config import cfg
+from lpr.utils.downloader import download_from_GDrive
+from lpr.utils.logger import logger
 
 
 def download_checkpoints(list_checkpoints):
