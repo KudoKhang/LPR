@@ -1,7 +1,5 @@
-# opencv-contrib-python>=4.2.0.32
 opencv-contrib-python
 numpy
-tensorflow
 imutils
 scikit-image
 scikit-learn
@@ -19,3 +17,5 @@ python-multipart
 hydra-core
 gdown
 codetiming
+requests
+pytest
