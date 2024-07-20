@@ -16,5 +16,5 @@ services:
     depends_on:
       - app
     environment:
-      - NGROK_AUTHTOKEN=2do0dydLRxCpwbVvTgbKrW55YoO_7vTMLQuBbr1CYQ8URTAzX
+      - NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN
     command: ngrok http app:8000
