@@ -87,4 +87,4 @@ checkpoints/
 # pytest
 .pytest_cache/
 
-data
+data/

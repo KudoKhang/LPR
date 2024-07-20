@@ -1,6 +1,5 @@
-version: "3"
 services:
-  lpr_app:
+  app:
     image: hnkhang/lpr:app
     build:
       context: .
@@ -9,3 +8,13 @@ services:
       - "8000:8000"
     volumes:
       - .:/LPR
+
+  ngrok:
+    image: wernight/ngrok
+    ports:
+      - "4040:4040"
+    depends_on:
+      - app
+    environment:
+      - NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN
+    command: ngrok http app:8000

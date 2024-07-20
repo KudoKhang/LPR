@@ -1,24 +1,27 @@
-#!/bin/bash
 FROM python:3.9-slim-buster
 
 ENV SHELL /bin/bash
+WORKDIR /LPR
 
-WORKDIR LPR
+# Update package list and install dependencies
+RUN apt-get update && \
+    apt-get install -y python3-opencv && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update
+# Copy the application code and requirements
+COPY requirements.txt requirements.txt
+COPY . .
 
-#COPY requirements.txt WORKDIR/requirements.txt
-COPY .. .
+# Upgrade pip and install Python dependencies
+RUN python -m pip install --upgrade pip && \
+    pip install pip && \
+    pip install -r requirements.txt && \
+    pip install numpy --upgrade && \
+    pip install opencv-python
 
-RUN python -m pip install --upgrade pip
-RUN pip install pip==21.3.1
-RUN pip install -r requirements.txt
+# Set the PYTHONPATH environment variable
+ENV PYTHONPATH="${PYTHONPATH}:/LPR"
 
-RUN pip install numpy --upgrade
-RUN apt-get update && apt-get install -y python3-opencv
-RUN pip install opencv-python
-
-EXPOSE 8000
-ENV PYTHONPATH="${PYTHONPATH}:$(pwd)"
-
+# Set the entry point for the container
 ENTRYPOINT ["python3", "LPR/app.py"]
