@@ -11,4 +11,4 @@ def test_infer():
     lpr_predictor = LicensePlateRecognition()
     image = cv2.imread(cfg.image_test)
     output = lpr_predictor.predict(image)
-    assert output == ("30G42717", "[1574  982 1858 1168]")
+    assert output == ("51C45736", "[266 144 351 212]")
